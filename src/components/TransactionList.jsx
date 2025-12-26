@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import Swal from 'sweetalert2';
+import { FaCamera, FaTrash, FaEdit } from 'react-icons/fa';
 
 export default function TransactionList({ 
   transactions, 
@@ -13,6 +15,23 @@ export default function TransactionList({
   const [selectedDate, setSelectedDate] = useState("");
   // State untuk kontrol modal konfirmasi
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+
+  // --- TAMBAHKAN FUNGSI INI ---
+  const showReceipt = (url) => {
+    Swal.fire({
+      title: '<span style="color: #fff">Bukti Transaksi</span>',
+      imageUrl: url,
+      imageAlt: 'Bukti Transaksi',
+      background: '#1a1f2e', // Sesuaikan dengan tema Anda
+      confirmButtonColor: '#3b82f6',
+      confirmButtonText: 'Tutup',
+      showCloseButton: true,
+      backdrop: `rgba(0,0,0,0.8)`,
+      customClass: {
+        popup: 'rounded-2xl border border-white/10'
+      }
+    });
+  };
 
   const availableDates = useMemo(() => {
     const dates = transactions.map(t => {
@@ -69,10 +88,10 @@ export default function TransactionList({
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h2 className="font-bold text-xl text-white">Riwayat Transaksi</h2>
         <div className="flex gap-2">
-          <button onClick={onExportExcel} className="px-4 py-2 bg-green-600/20 text-green-400 border border-green-600/30 rounded-lg text-sm font-medium hover:bg-green-600/30 transition">
+          <button onClick={onExportExcel} className="px-4 py-2 bg-green-600/20 text-green-400 border border-green-600/30 rounded-lg text-sm font-medium hover:bg-green-600/30 transition cursor-pointer">
             Excel
           </button>
-          <button onClick={onExportPDF} className="px-4 py-2 bg-red-600/20 text-red-400 border border-red-600/30 rounded-lg text-sm font-medium hover:bg-red-600/30 transition">
+          <button onClick={onExportPDF} className="px-4 py-2 bg-red-600/20 text-red-400 border border-red-600/30 rounded-lg text-sm font-medium hover:bg-red-600/30 transition cursor-pointer">
             PDF
           </button>
         </div>
@@ -155,6 +174,20 @@ export default function TransactionList({
                   <span className={`font-bold text-base ${t.type === "income" ? "text-green-400" : "text-red-400"}`}>
                     {t.type === "income" ? "+" : "-"} Rp {t.amount.toLocaleString("id-ID")}
                   </span>
+                  {/* ICON FOTO */}
+                  {t.imageUrl ? (
+                    <button
+                      onClick={() => showReceipt(t.imageUrl)}
+                      className="p-2 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/40 transition cursor-pointer"
+                      title="Lihat Bukti"
+                    >
+                      📷
+                    </button>
+                  ) : (
+                    <div className="p-2 text-gray-700 opacity-20" title="Tidak ada bukti">
+                      📷
+                    </div>
+                  )}
                   <div className="flex gap-4">
                     <button onClick={() => onEdit(t)} className="text-blue-400 hover:text-blue-300 text-sm font-medium transition cursor-pointer">Edit</button>
                     {/* Mengubah onDelete langsung menjadi setDeleteConfirmId */}

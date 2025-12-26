@@ -33,7 +33,7 @@ export default function TotalBalanceCard({ transactions }) {
             {/* Tombol Sensor */}
             <button
               onClick={() => setIsVisible(!isVisible)}
-              className="text-blue-200 hover:text-white transition-colors p-1"
+              className="text-blue-200 hover:text-white transition-colors p-1 cursor-pointer"
               title={isVisible ? "Sembunyikan Saldo" : "Tampilkan Saldo"}
             >
               {isVisible ? <EyeOff size={16} /> : <Eye size={16} />}

@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { auth, db } from "@/lib/firebase";
+import { storage,auth, db } from "@/lib/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import {
   collection,
   addDoc,
@@ -37,6 +38,8 @@ export default function DashboardPage() {
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
   const [note, setNote] = useState("");
+  const [imageFile, setImageFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
   const [transactionDate, setTransactionDate] = useState(() => {
     const today = new Date();
     return today.toISOString().split("T")[0]; // yyyy-mm-dd
@@ -54,8 +57,32 @@ export default function DashboardPage() {
 
   const [scrolled, setScrolled] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
+  const CLOUD_NAME = "dvzk6n0kh"; 
+  const UPLOAD_PRESET = "aruskas_preset";
 
   const formRef = useRef(null);
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+  
+    // Batasan 2MB
+    const limitSize = 2097152; 
+  
+    if (file.size > limitSize) {
+      Swal.fire({
+        icon: 'error',
+        title: 'File Terlalu Besar',
+        text: 'Ukuran maksimal foto adalah 2MB. Foto Anda: ' + (file.size / (1024 * 1024)).toFixed(2) + 'MB',
+      });
+      e.target.value = ""; 
+      setImageFile(null); // Pastikan state direset jika gagal
+      return;
+    }
+  
+    // PENTING: Simpan file ke state agar bisa dibaca oleh fungsi submit
+    setImageFile(file); 
+  };
 
 useEffect(() => {
   const handleScroll = () => {
@@ -140,13 +167,18 @@ useEffect(() => {
   }, [user]);
 
   /* 📅 FILTER BULAN */
-  const filtered = useMemo(() => {
-    return transactions.filter((t) => {
-      if (!t.transactionDate) return false;
-      const d = t.transactionDate.toDate();
-      return d.getMonth() === month && d.getFullYear() === year;
-    });
-  }, [transactions, month, year]);
+const filtered = useMemo(() => {
+  return transactions.filter((t) => {
+    if (!t.transactionDate) return false;
+    
+    // Cek apakah itu Firebase Timestamp atau Date objek
+    const d = t.transactionDate.seconds 
+      ? t.transactionDate.toDate() 
+      : new Date(t.transactionDate);
+
+    return d.getMonth() === month && d.getFullYear() === year;
+  });
+}, [transactions, month, year]);
   
 
   /* 💰 TOTAL */
@@ -163,31 +195,95 @@ useEffect(() => {
   /* ➕ SUBMIT */
   const submit = async (e) => {
     e.preventDefault();
-    if (!amount || !category || !transactionDate) return;
-  
-    const dateObj = new Date(transactionDate);
-  
-    if (editingId) {
-      await updateDoc(doc(db, "transactions", editingId), {
-        type,
-        amount: Number(amount),
-        category,
-        note,
-        transactionDate: dateObj,
-      });
-    } else {
-      await addDoc(collection(db, "transactions"), {
-        uid: user.uid,
-        type,
-        amount: Number(amount),
-        category,
-        note,
-        transactionDate: dateObj,
-        createdAt: serverTimestamp(), // tetap simpan createdAt
-      });
+    
+    // 1. Validasi Input
+    if (!amount || amount <= 0 || !category.trim()) {
+      Swal.fire("Error", "Mohon isi semua data dengan benar", "error");
+      return;
     }
-  
-    resetForm();
+
+    setUploading(true);
+
+    try {
+      // Ambil URL gambar lama jika sedang mode EDIT
+      let imageUrl = editingId 
+        ? (transactions.find(t => t.id === editingId)?.imageUrl || "") 
+        : "";
+
+      // 2. Logika Upload ke CLOUDINARY (Jika ada file baru)
+      if (imageFile) {
+        // Validasi ukuran file Cloudinary (Max 2MB untuk free tier aman)
+        if (imageFile.size > 2 * 1024 * 1024) {
+          throw new Error("Ukuran file terlalu besar. Maksimal 2MB.");
+        }
+
+        const formData = new FormData();
+        formData.append("file", imageFile);
+        formData.append("upload_preset", "aruskas_preset"); 
+        formData.append("cloud_name", CLOUD_NAME);
+
+        const res = await fetch(
+          `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+          { method: "POST", body: formData }
+        );
+
+        const data = await res.json();
+        
+        if (data.secure_url) {
+          imageUrl = data.secure_url; // Dapatkan link gambar dari Cloudinary
+        } else {
+          throw new Error("Gagal upload ke Cloudinary: " + (data.error?.message || "Unknown error"));
+        }
+      }
+
+      // 3. Jalankan Simpan ke Database
+      await saveToFirestore(imageUrl);
+
+    } catch (error) {
+      console.error("Submit Error:", error);
+      Swal.fire("Gagal", error.message, "error");
+      setUploading(false);
+    }
+  };
+
+  // Fungsi pembantu untuk simpan ke database (DIPISAH AGAR RAPI)
+  const saveToFirestore = async (url) => {
+    try {
+      const payload = {
+        type,
+        amount: Number(amount),
+        category,
+        note,
+        transactionDate: new Date(transactionDate),
+        imageUrl: url,
+      };
+
+      if (editingId) {
+        // Update Dokumen
+        const docRef = doc(db, "transactions", editingId);
+        await updateDoc(docRef, payload);
+      } else {
+        // Tambah Dokumen Baru
+        await addDoc(collection(db, "transactions"), {
+          ...payload,
+          uid: user.uid,
+          createdAt: serverTimestamp(),
+        });
+      }
+
+      Swal.fire("Berhasil", "Transaksi berhasil disimpan!", "success");
+      resetForm();
+    } catch (e) {
+      console.error("Firestore Error:", e);
+      // Cek jika error karena ID tidak ditemukan (seperti di gambar Anda)
+      if (e.message.includes("not-found")) {
+        Swal.fire("Error", "Data yang ingin di-update tidak ditemukan di database.", "error");
+      } else {
+        Swal.fire("Gagal", "Database Error: " + e.message, "error");
+      }
+    } finally {
+      setUploading(false);
+    }
   };
   
 
@@ -198,6 +294,7 @@ useEffect(() => {
     setCategory("");
     setNote("");
     setTransactionDate(new Date().toISOString().split("T")[0]);
+    setImageFile(null); // Reset file
   };
   
 
@@ -216,9 +313,37 @@ useEffect(() => {
   };
   
 
-  const deleteTransaction = async (id) => {
-    if (!confirm("Hapus transaksi?")) return;
-    await deleteDoc(doc(db, "transactions", id));
+  const deleteTransaction = async (id, imageUrl) => {
+    const result = await Swal.fire({
+      title: 'Hapus Transaksi?',
+      text: "Data yang dihapus tidak dapat dikembalikan!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Ya, Hapus!',
+      cancelButtonText: 'Batal'
+    });
+  
+    if (result.isConfirmed) {
+      try {
+        await deleteDoc(doc(db, "transactions", id));
+        
+        // Jika ada gambar, beri info tambahan
+        if (imageUrl) {
+          console.log("Gambar terkait di Cloudinary:", imageUrl);
+          Swal.fire(
+            'Terhapus!',
+            'Transaksi telah dihapus. (Catatan: File gambar masih tersimpan di Cloudinary Anda)',
+            'success'
+          );
+        } else {
+          Swal.fire('Terhapus!', 'Transaksi telah dihapus.', 'success');
+        }
+      } catch (error) {
+        Swal.fire('Error', 'Gagal menghapus data', 'error');
+      }
+    }
   };
 
   /* 📤 EXPORT */
@@ -251,8 +376,10 @@ useEffect(() => {
       startY: 30,
       head: [["Tanggal", "Jenis", "Kategori", "Catatan", "Jumlah"]],
       body: filtered.map((t) => [
-        t.createdAt.toDate().toLocaleDateString("id-ID"),
-        t.type === "income" ? "Pemasukan" : "Pengeluaran",
+        t.transactionDate.seconds 
+        ? t.transactionDate.toDate().toLocaleDateString("id-ID") 
+        : new Date(t.transactionDate).toLocaleDateString("id-ID"),
+      t.type === "income" ? "Pemasukan" : "Pengeluaran",
         t.category,
         t.note || "-",
         `Rp ${t.amount.toLocaleString("id-ID")}`,
@@ -561,9 +688,44 @@ useEffect(() => {
               rows={3}
               className="w-full p-3 rounded-xl bg-black/40 resize-none"
             />
+          
+            {/* Tambahkan ini di dalam <form> sebelum button Simpan */}
+            <div className="space-y-2">
+              <label className="text-xs text-gray-400 ml-1">Bukti Transaksi (Opsional)</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileUpload}
+                className="w-full text-sm text-gray-400
+                  file:mr-4 file:py-2 file:px-4
+                  file:rounded-xl file:border-0
+                  file:text-sm file:font-semibold
+                  file:bg-blue-600/20 file:text-blue-400
+                  hover:file:bg-blue-600/30
+                  cursor-pointer bg-black/40 rounded-xl p-2"
+              />
+              {imageFile && (
+                <p className="text-[10px] text-green-400 ml-1">
+                  ✔ {imageFile.name} siap diunggah
+                </p>
+              )}
+            </div>
 
-            <button className="mt-auto w-full p-3 rounded-xl bg-blue-600 hover:bg-blue-700 font-semibold cursor-pointer">
-              Simpan
+            <button 
+              type="submit"
+              disabled={uploading}
+              className="mt-auto w-full p-3 rounded-xl bg-blue-600 hover:bg-blue-700 font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              {uploading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                  Menyimpan...
+                </span>
+              ) : editingId ? (
+                "Update Transaksi"
+              ) : (
+                "Simpan Transaksi"
+              )}
             </button>
           </form>
 
@@ -572,6 +734,35 @@ useEffect(() => {
             <h2 className="font-semibold text-lg mb-3">Grafik Bulanan</h2>
             <div className="flex-1 h-[300px]">
               <FinanceChart income={income || 0} expense={expense || 0} />
+            </div>
+            {/* BOX BARU: Statistik Tambahan di Bawah Grafik */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                <p className="text-gray-400 text-[10px] uppercase tracking-wider">Transaksi</p>
+                <p className="text-xl font-bold">{filtered.length}</p>
+              </div>
+              <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                <p className="text-gray-400 text-[10px] uppercase tracking-wider">Tabungan</p>
+                <p className="text-xl font-bold text-emerald-400">
+                  {income + expense > 0 
+                    ? Math.round((income / (income + expense)) * 100) 
+                    : 0}%
+                </p>
+              </div>
+              <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                <p className="text-gray-400 text-[10px] uppercase tracking-wider">Terpakai</p>
+                <p className="text-xl font-bold text-red-400">
+                  {income + expense > 0 
+                    ? Math.round((expense / (income + expense)) * 100) 
+                    : 0}%
+                </p>
+              </div>
+              <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                <p className="text-gray-400 text-[10px] uppercase tracking-wider">Status</p>
+                <p className={`text-sm font-bold mt-1 ${balance >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                  {balance >= 0 ? "Surplus ✅" : "Defisit ⚠️"}
+                </p>
+              </div>
             </div>
           </div>
         </div>
