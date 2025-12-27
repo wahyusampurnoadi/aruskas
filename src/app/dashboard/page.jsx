@@ -81,8 +81,29 @@ export default function DashboardPage() {
     }
   
     // PENTING: Simpan file ke state agar bisa dibaca oleh fungsi submit
-    setImageFile(file); 
+    setImageFile(file);
   };
+
+const handleUpdate = async (transactionId, updatedData) => {
+  try {
+    // PASTIKAN transactionId tidak kosong
+    if (!transactionId) {
+      console.error("ID Transaksi tidak ditemukan");
+      return;
+    }
+
+    const docRef = doc(db, "transactions", transactionId);
+    
+    // Gunakan updateDoc
+    await updateDoc(docRef, updatedData);
+    
+    alert("Berhasil memperbarui data!");
+  } catch (error) {
+    // Di sinilah error "No document to update" tertangkap
+    console.error("Error updating document: ", error);
+    alert("Gagal update: Pastikan data masih ada di database.");
+  }
+};
 
 useEffect(() => {
   const handleScroll = () => {
@@ -256,6 +277,7 @@ const filtered = useMemo(() => {
         note,
         transactionDate: new Date(transactionDate),
         imageUrl: url,
+        updatedAt: serverTimestamp(),
       };
 
       if (editingId) {
