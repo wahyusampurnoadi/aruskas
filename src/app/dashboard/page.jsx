@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState, useRef } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { storage,auth, db } from "@/lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -30,6 +31,7 @@ import Swal from 'sweetalert2';
 /* ====================== */
 export default function DashboardPage() {
   const router = useRouter();
+  const pathname = usePathname();
 
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -545,6 +547,47 @@ const filtered = useMemo(() => {
         </span>
       </h1>
 
+      {/* Deskripsi: Navigasi Desktop tetap seperti kode Anda */}
+      <nav className="hidden md:flex items-center gap-2 bg-white/5 p-1.5 rounded-2xl border border-white/5">
+        <Link
+          href="/dashboard"
+          className={`relative group px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 overflow-hidden ${
+            pathname === "/dashboard"
+              ? "text-blue-400"
+              : "text-gray-400 hover:text-white"
+          }`}
+        >
+          {pathname === "/dashboard" && (
+            <span className="absolute inset-0 bg-blue-500/10 animate-pulse"></span>
+          )}
+          <span className="relative z-10 flex items-center gap-2">
+            🏠 Dashboard
+          </span>
+          {pathname === "/dashboard" && (
+            <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1/2 h-[2px] bg-blue-500 shadow-[0_0_8px_#3b82f6] rounded-full"></span>
+          )}
+        </Link>
+
+        <Link
+          href="/investasi"
+          className={`relative group px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 overflow-hidden ${
+            pathname === "/investasi"
+              ? "text-blue-400"
+              : "text-gray-400 hover:text-white"
+          }`}
+        >
+          {pathname === "/investasi" && (
+            <span className="absolute inset-0 bg-blue-500/10 animate-pulse"></span>
+          )}
+          <span className="relative z-10 flex items-center gap-2">
+            📈 Investasi
+          </span>
+          {pathname === "/investasi" && (
+            <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1/2 h-[2px] bg-blue-500 shadow-[0_0_8px_#3b82f6] rounded-full"></span>
+          )}
+        </Link>
+      </nav>
+
           <div className="flex items-center gap-6"> {/* gap diperbesar dari 4 ke 6 */}
             <div className="flex items-center gap-3">
               <Avatar name={user.displayName || user.email} />
@@ -798,6 +841,21 @@ const filtered = useMemo(() => {
             onExportPDF={exportPDF}
           />
         </main>
+
+        {/* --- MOBILE BOTTOM NAVIGATION --- */}
+      <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-[400px]">
+        <div className="bg-black/60 backdrop-blur-lg border border-white/10 p-2 rounded-2xl flex justify-around items-center shadow-2xl">
+          <Link href="/dashboard" className="flex flex-col items-center gap-1 px-4 py-2 rounded-xl bg-blue-500/10 text-blue-500">
+            <span className="text-xl">🏠</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest">Dashboard</span>
+          </Link>
+          
+          <Link href="/investasi" className="flex flex-col items-center gap-1 px-4 py-2 text-gray-400">
+            <span className="text-xl">📈</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest">Investasi</span>
+          </Link>
+        </div>
+      </div>
       </div>
     </div>
   );
