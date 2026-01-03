@@ -181,6 +181,33 @@ export default function TransactionList({
           </svg>
         </div>
       </div>
+        
+        {/* SORT TANGGAL */}
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <span className="text-xs text-gray-400 font-semibold">Urutkan:</span>
+
+          <button
+            onClick={() => setSortOrder("desc")}
+            className={`cursor-pointer px-3 py-1 text-xs rounded-lg font-bold transition ${
+              sortOrder === "desc"
+                ? "bg-blue-500 text-white"
+                : "bg-white/5 text-gray-400 hover:text-gray-200"
+            }`}
+          >
+            Terbaru
+          </button>
+
+          <button
+            onClick={() => setSortOrder("asc")}
+            className={`cursor-pointer px-3 py-1 text-xs rounded-lg font-bold transition ${
+              sortOrder === "asc"
+                ? "bg-blue-500 text-white"
+                : "bg-white/5 text-gray-400 hover:text-gray-200"
+            }`}
+          >
+            Terlama
+          </button>
+        </div>
 
         </div>
       </div>
