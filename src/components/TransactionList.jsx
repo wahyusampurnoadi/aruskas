@@ -15,6 +15,7 @@ export default function TransactionList({
   const [selectedDate, setSelectedDate] = useState("");
   // --- STATE BARU UNTUK FILTER TIPE ---
   const [filterType, setFilterType] = useState("all"); 
+  const [sortOrder, setSortOrder] = useState("desc");
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
 
   const showReceipt = (url) => {
@@ -44,14 +45,21 @@ export default function TransactionList({
 
   // --- LOGIKA FILTER YANG DIPERBARUI ---
   const filteredTransactions = useMemo(() => {
-    return transactions.filter(t => {
-      const dateString = t.transactionDate?.toDate().toISOString().split('T')[0];
-      const matchesDate = !selectedDate || dateString === selectedDate;
-      const matchesType = filterType === "all" || t.type === filterType;
-      
-      return matchesDate && matchesType;
-    });
-  }, [transactions, selectedDate, filterType]);
+    return transactions
+      .filter(t => {
+        const dateString = t.transactionDate?.toDate().toISOString().split('T')[0];
+        const matchesDate = !selectedDate || dateString === selectedDate;
+        const matchesType = filterType === "all" || t.type === filterType;
+        return matchesDate && matchesType;
+      })
+      .sort((a, b) => {
+        const dateA = a.transactionDate?.toDate().getTime() || 0;
+        const dateB = b.transactionDate?.toDate().getTime() || 0;
+        return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
+      });
+  }, [transactions, selectedDate, filterType, sortOrder]);
+  
+  
 
   const confirmDelete = () => {
     onDelete(deleteConfirmId);
@@ -81,73 +89,102 @@ export default function TransactionList({
       )}
 
       {/* HEADER & EXPORT */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <h2 className="font-bold text-xl text-white">Riwayat Transaksi</h2>
-        <div className="flex gap-2">
+        <div className="flex gap-2 w-full sm:w-auto">
           <button onClick={onExportExcel} className="px-4 py-2 bg-green-600/20 text-green-400 border border-green-600/30 rounded-lg text-sm font-medium hover:bg-green-600/30 transition cursor-pointer">
-            Excel
+          📊 Excel
           </button>
           <button onClick={onExportPDF} className="px-4 py-2 bg-red-600/20 text-red-400 border border-red-600/30 rounded-lg text-sm font-medium hover:bg-red-600/30 transition cursor-pointer">
-            PDF
+          📄 PDF
           </button>
         </div>
       </div>
 
       {/* BAGIAN FILTER */}
-      <div className="flex flex-col md:flex-row md:items-center gap-4 py-2">
-        {/* Filter Tipe (Tab Style) */}
-        <div className="flex bg-white/5 p-1 rounded-xl border border-white/10 w-fit">
-          <button 
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 py-2">
+        
+
+      {/* KIRI: FILTER */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full">
+        {/* Filter Tipe */}
+        <div className="flex bg-white/5 p-1 rounded-xl border border-white/10 w-full sm:w-fit justify-between sm:justify-start">
+          <button
             onClick={() => setFilterType("all")}
-            className={`cursor-pointer px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${filterType === 'all' ? 'bg-blue-500 text-white shadow-lg' : 'text-gray-400 hover:text-gray-200'}`}
+            className={`cursor-pointer px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              filterType === "all"
+                ? "bg-blue-500 text-white shadow-lg"
+                : "text-gray-400 hover:text-gray-200"
+            }`}
           >
             Semua
           </button>
-          <button 
+          <button
             onClick={() => setFilterType("income")}
-            className={`cursor-pointer px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${filterType === 'income' ? 'bg-green-500 text-white shadow-lg' : 'text-gray-400 hover:text-gray-200'}`}
+            className={`cursor-pointer px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              filterType === "income"
+                ? "bg-green-500 text-white shadow-lg"
+                : "text-gray-400 hover:text-gray-200"
+            }`}
           >
             Pemasukan
           </button>
-          <button 
+          <button
             onClick={() => setFilterType("expense")}
-            className={`cursor-pointer px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${filterType === 'expense' ? 'bg-red-500 text-white shadow-lg' : 'text-gray-400 hover:text-gray-200'}`}
+            className={`cursor-pointer px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              filterType === "expense"
+                ? "bg-red-500 text-white shadow-lg"
+                : "text-gray-400 hover:text-gray-200"
+            }`}
           >
             Pengeluaran
           </button>
         </div>
 
         {/* Filter Tanggal */}
-        <div className="flex items-center gap-3">
-          <div className="relative group">
-            <select 
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="appearance-none cursor-pointer bg-[#1a1f2e] border border-white/10 text-gray-200 text-sm rounded-xl pl-4 pr-10 py-2 outline-none focus:border-blue-500/50 transition-all"
+        <div className="relative overflow-hidden rounded-xl border border-white/10 bg-[#1a1f2e] w-full sm:w-auto">
+        <select
+          value={selectedDate}
+          onChange={(e) => setSelectedDate(e.target.value)}
+          className="
+            w-full appearance-none cursor-pointer
+            bg-[#1a1f2e]
+            text-gray-200 text-sm
+            pl-4 pr-10 py-2
+            outline-none
+            focus:bg-[#1a1f2e]
+          "
+        >
+          <option value="" className="bg-[#1a1f2e] text-gray-400">
+            Semua Tanggal
+          </option>
+
+          {availableDates.map(date => (
+            <option
+              key={date}
+              value={date}
+              className="bg-[#1a1f2e] text-gray-200"
             >
-              <option value="">Semua Tanggal</option>
-              {availableDates.map(date => (
-                <option key={date} value={date}>
-                  {new Date(date).toLocaleDateString("id-ID", { day: '2-digit', month: 'long', year: 'numeric' })}
-                </option>
-              ))}
-            </select>
-            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-              </svg>
-            </div>
-          </div>
-          {(selectedDate || filterType !== "all") && (
-            <button 
-              onClick={() => { setSelectedDate(""); setFilterType("all"); }} 
-              className="text-xs font-semibold text-red-400/80 hover:text-red-400 transition cursor-pointer"
-            >
-              Reset Filter ×
-            </button>
-          )}
+              {new Date(date).toLocaleDateString("id-ID", {
+                day: "2-digit",
+                month: "long",
+                year: "numeric",
+              })}
+            </option>
+          ))}
+        </select>
+
+        {/* ICON PANAH */}
+        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+          </svg>
         </div>
       </div>
+
+        </div>
+      </div>
+
 
       {/* LIST TRANSAKSI (Sama seperti sebelumnya) */}
       <div className="space-y-3">
@@ -159,7 +196,7 @@ export default function TransactionList({
           filteredTransactions.map((t) => {
             const isExpanded = expandedId === t.id;
             return (
-              <div key={t.id} className="bg-[#1a1f2e]/50 border border-white/5 p-4 rounded-2xl transition hover:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div key={t.id} className="bg-[#1a1f2e]/50 border border-white/5 p-4 rounded-2xl transition hover:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="sm:w-1/3 min-w-0">
                   <p className="font-semibold text-gray-100 truncate">{t.category}</p>
                   {t.note && (
