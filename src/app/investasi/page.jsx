@@ -5,8 +5,19 @@ import { FaChartPie, FaPlus, FaBitcoin, FaGem, FaBuilding, FaEdit, FaTrash } fro
 import Link from 'next/link';
 import ModalInvestasi from "./ModalInvestasi";
 import { usePathname, useRouter } from "next/navigation";
-import { auth } from "@/lib/firebase"; 
+import { auth, db } from "@/lib/firebase"; 
 import { signOut, onAuthStateChanged } from "firebase/auth";
+import { 
+  collection, 
+  addDoc, 
+  query, 
+  where, 
+  onSnapshot, 
+  doc, 
+  updateDoc, 
+  deleteDoc,
+  serverTimestamp 
+} from "firebase/firestore";
 import LoadingScreen from "@/components/LoadingScreen";
 
 const Avatar = ({ name }) => (
@@ -27,14 +38,7 @@ export default function InvestasiPage() {
   const [isModalOpen, setIsModalOpen] = useState(false); 
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({ name: "", amount: "", currentVal: "" });
-  
-  const [investments, setInvestments] = useState([
-    { id: 1, name: "BBCA", type: "Saham", amount: 5000000, currentVal: 5500000 },
-    { id: 2, name: "ANTAM", type: "Emas", amount: 2000000, currentVal: 2100000 },
-    { id: 3, name: "Bitcoin", type: "Crypto", amount: 3000000, currentVal: 3450000 },
-    { id: 4, name: "ASII", type: "Saham", amount: 3000000, currentVal: 2800000 },
-    { id: 5, name: "Ethereum", type: "Crypto", amount: 1500000, currentVal: 1800000 },
-  ]);
+  const [investments, setInvestments] = useState([]);
 
   // 2. EFFECT HOOKS
   useEffect(() => {
@@ -55,18 +59,26 @@ export default function InvestasiPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // REAL-TIME FIRESTORE SYNC
   useEffect(() => {
-    const savedData = localStorage.getItem("my_investments");
-    if (savedData) {
-      setInvestments(JSON.parse(savedData));
-    }
-  }, []);
-  
-  useEffect(() => {
-    if (investments.length > 0) {
-      localStorage.setItem("my_investments", JSON.stringify(investments));
-    }
-  }, [investments]);
+    if (!user) return;
+
+    // Ambil data hanya milik user yang sedang login
+    const q = query(
+      collection(db, "investments"), 
+      where("userId", "==", user.uid)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setInvestments(data);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
 
   // 3. LOGIC HANDLERS
   const handleLogout = async () => {
@@ -78,37 +90,46 @@ export default function InvestasiPage() {
     }
   };
 
-  const handleSaveInvestment = () => {
+  const handleSaveInvestment = async () => {
     if (!formData.name || !formData.amount || !formData.currentVal) {
       alert("Mohon isi semua data!");
       return;
     }
-    if (editingId) {
-      setInvestments(prev => 
-        prev.map(inv => 
-          inv.id === editingId 
-            ? { ...inv, name: formData.name, amount: parseInt(formData.amount), currentVal: parseInt(formData.currentVal) }
-            : inv
-        )
-      );
-    } else {
-      const newEntry = {
-        id: Date.now(),
-        name: formData.name,
-        type: activeTab,
-        amount: parseInt(formData.amount),
-        currentVal: parseInt(formData.currentVal),
-      };
-      setInvestments(prev => [...prev, newEntry]);
+
+    const payload = {
+      name: formData.name,
+      type: activeTab,
+      amount: parseInt(formData.amount),
+      currentVal: parseInt(formData.currentVal),
+      userId: user.uid,
+      updatedAt: serverTimestamp(),
+    };
+
+    try {
+      if (editingId) {
+        // Update ke Firestore
+        await updateDoc(doc(db, "investments", editingId), payload);
+      } else {
+        // Simpan baru ke Firestore
+        await addDoc(collection(db, "investments"), payload);
+      }
+      
+      setIsModalOpen(false);
+      setEditingId(null);
+      setFormData({ name: "", amount: "", currentVal: "" });
+    } catch (error) {
+      console.error("Error saving data:", error);
+      alert("Gagal menyimpan ke database.");
     }
-    setIsModalOpen(false);
-    setEditingId(null);
-    setFormData({ name: "", amount: "", currentVal: "" });
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (confirm("Apakah Anda yakin ingin menghapus aset ini?")) {
-      setInvestments(investments.filter(inv => inv.id !== id));
+      try {
+        await deleteDoc(doc(db, "investments", id));
+      } catch (error) {
+        console.error("Error deleting data:", error);
+      }
     }
   };
 
@@ -122,9 +143,9 @@ export default function InvestasiPage() {
 
   // 4. MEMO HOOK
   const stats = useMemo(() => {
-    const totalInvested = investments.reduce((sum, item) => sum + item.amount, 0);
-    const totalCurrent = investments.reduce((sum, item) => sum + item.currentVal, 0);
-    const getValByType = (type) => investments.filter(i => i.type === type).reduce((sum, item) => sum + item.currentVal, 0);
+    const totalInvested = investments.reduce((sum, item) => sum + (item.amount || 0), 0);
+    const totalCurrent = investments.reduce((sum, item) => sum + (item.currentVal || 0), 0);
+    const getValByType = (type) => investments.filter(i => i.type === type).reduce((sum, item) => sum + (item.currentVal || 0), 0);
 
     return {
       totalInvested,
@@ -139,10 +160,10 @@ export default function InvestasiPage() {
     };
   }, [investments]);
 
-  // 5. CONDITIONAL RENDER (Harus setelah semua Hook terpanggil)
+  // 5. CONDITIONAL RENDER
   if (loading) return <LoadingScreen />;
 
-  // 6. MAIN RENDER
+  // 6. MAIN RENDER (UI TETAP SAMA)
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-black text-white relative">
       <div className="fixed inset-0 z-0 pointer-events-none">
@@ -217,7 +238,7 @@ export default function InvestasiPage() {
             <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden backdrop-blur-md">
               <div className="p-6 border-b border-white/10 flex justify-between items-center">
                 <h2 className="text-lg font-bold">Rincian Aset {activeTab}</h2>
-                <button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition cursor-pointer">
+                <button onClick={() => { setEditingId(null); setFormData({name:"", amount:"", currentVal:""}); setIsModalOpen(true); }} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition cursor-pointer">
                   <FaPlus size={10} /> Tambah {activeTab}
                 </button>
               </div>
@@ -235,7 +256,7 @@ export default function InvestasiPage() {
                     {filteredInvestments.length > 0 ? filteredInvestments.map((inv) => (
                       <tr key={inv.id} className="group hover:bg-white/[0.03] transition">
                         <td className="px-6 py-4 font-bold">{inv.name}</td>
-                        <td className="px-6 py-4 text-center">Rp {inv.currentVal.toLocaleString("id-ID")}</td>
+                        <td className="px-6 py-4 text-center">Rp {inv.currentVal?.toLocaleString("id-ID")}</td>
                         <td className={`px-6 py-4 text-center font-bold ${inv.currentVal - inv.amount >= 0 ? 'text-green-400' : 'text-red-400'}`}>{((inv.currentVal - inv.amount) / inv.amount * 100).toFixed(1)}%</td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex justify-end gap-2 opacity-50 group-hover:opacity-100">
@@ -277,8 +298,6 @@ export default function InvestasiPage() {
       {/* --- MOBILE BOTTOM NAVIGATION --- */}
       <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-[400px]">
         <div className="bg-black/60 backdrop-blur-lg border border-white/10 p-2 rounded-2xl flex justify-around items-center shadow-2xl">
-          
-          {/* Tombol Dashboard */}
           <Link 
             href="/dashboard" 
             className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all ${
@@ -291,7 +310,6 @@ export default function InvestasiPage() {
             <span className="text-[10px] font-bold uppercase tracking-widest">Dashboard</span>
           </Link>
           
-          {/* Tombol Investasi */}
           <Link 
             href="/investasi" 
             className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all ${
@@ -303,11 +321,17 @@ export default function InvestasiPage() {
             <span className="text-xl">📈</span>
             <span className="text-[10px] font-bold uppercase tracking-widest">Investasi</span>
           </Link>
-
         </div>
       </div>
 
-      <ModalInvestasi isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={handleSaveInvestment} activeTab={activeTab} formData={formData} setFormData={setFormData} />
+      <ModalInvestasi 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onSave={handleSaveInvestment} 
+        activeTab={activeTab} 
+        formData={formData} 
+        setFormData={setFormData} 
+      />
     </div>
   );
 }
