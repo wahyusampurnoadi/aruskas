@@ -58,6 +58,7 @@ export default function DashboardPage() {
   const years = Array.from({ length: 21 }, (_, i) => year - 10 + i);
 
   const [scrolled, setScrolled] = useState(false);
+  const [showNav, setShowNav] = useState(true);
   const [expandedId, setExpandedId] = useState(null);
   const CLOUD_NAME = "dvzk6n0kh"; 
   const UPLOAD_PRESET = "aruskas_preset";
@@ -108,12 +109,31 @@ const handleUpdate = async (transactionId, updatedData) => {
 };
 
 useEffect(() => {
+  let timeoutId;
+
   const handleScroll = () => {
+    // 1. Logika untuk background header (scrolled)
     setScrolled(window.scrollY > 10);
+
+    // 2. Logika Auto-Hide Navigasi Mobile
+    setShowNav(true); // Munculkan kembali saat scroll
+    
+    // Reset timer setiap kali ada aktivitas scroll
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => {
+      setShowNav(false); // Sembunyikan setelah 4 detik tidak ada aktivitas
+    }, 1200);
   };
 
   window.addEventListener("scroll", handleScroll);
-  return () => window.removeEventListener("scroll", handleScroll);
+  
+  // Inisialisasi timer pertama kali saat halaman dimuat
+  timeoutId = setTimeout(() => setShowNav(false), 2500);
+
+  return () => {
+    window.removeEventListener("scroll", handleScroll);
+    clearTimeout(timeoutId);
+  };
 }, []);
 
 useEffect(() => {
@@ -843,19 +863,25 @@ const filtered = useMemo(() => {
         </main>
 
         {/* --- MOBILE BOTTOM NAVIGATION --- */}
-      <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-[400px]">
-        <div className="bg-black/60 backdrop-blur-lg border border-white/10 p-2 rounded-2xl flex justify-around items-center shadow-2xl">
-          <Link href="/dashboard" className="flex flex-col items-center gap-1 px-4 py-2 rounded-xl bg-blue-500/10 text-blue-500">
-            <span className="text-xl">🏠</span>
-            <span className="text-[10px] font-bold uppercase tracking-widest">Dashboard</span>
-          </Link>
-          
-          <Link href="/investasi" className="flex flex-col items-center gap-1 px-4 py-2 text-gray-400">
-            <span className="text-xl">📈</span>
-            <span className="text-[10px] font-bold uppercase tracking-widest">Investasi</span>
-          </Link>
+        <div className={`md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-[400px] transition-all duration-500 ${
+          showNav ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10 pointer-events-none"
+        }`}>
+          <div className="bg-black/60 backdrop-blur-lg border border-white/10 p-2 rounded-2xl flex justify-around items-center shadow-2xl">
+            <Link href="/dashboard" className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all ${
+              pathname === "/dashboard" ? "bg-blue-500/10 text-blue-500" : "text-gray-400"
+            }`}>
+              <span className="text-xl">🏠</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest">Dashboard</span>
+            </Link>
+            
+            <Link href="/investasi" className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all ${
+              pathname === "/investasi" ? "bg-blue-500/10 text-blue-500" : "text-gray-400"
+            }`}>
+              <span className="text-xl">📈</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest">Investasi</span>
+            </Link>
+          </div>
         </div>
-      </div>
       </div>
     </div>
   );
