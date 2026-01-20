@@ -7,12 +7,14 @@ import ModalInvestasi from "./ModalInvestasi";
 import { usePathname, useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase"; 
 import { signOut, onAuthStateChanged } from "firebase/auth";
+import useLivePrice from "@/app/hooks/useLivePrice";
 import { 
   collection, 
   addDoc, 
   query, 
   where, 
-  onSnapshot, 
+  onSnapshot,
+  getDocs, 
   doc, 
   updateDoc, 
   deleteDoc,
@@ -36,9 +38,84 @@ export default function InvestasiPage() {
   const [activeTab, setActiveTab] = useState("Saham");
   const [isModalOpen, setIsModalOpen] = useState(false); 
   const [editingId, setEditingId] = useState(null);
-  const [formData, setFormData] = useState({ name: "", amount: "", currentVal: "" });
+  const [formData, setFormData] = useState({
+    name: "",
+    symbol: "",
+    amount: "",
+    grams: "",
+    coins: "",
+    lots: ""
+  });  
   const [investments, setInvestments] = useState([]);
   const [showNav, setShowNav] = useState(true);
+
+  async function migrateCryptoData(userId) {
+    const q = query(
+      collection(db, "investments"),
+      where("userId", "==", userId),
+      where("type", "==", "Crypto")
+    );
+  
+    const snap = await getDocs(q);
+  
+    for (const docSnap of snap.docs) {
+      const data = docSnap.data();
+  
+      // Skip jika sudah benar
+      if (data.coins && data.coins > 0) continue;
+  
+      // Wajib ada amount & basePrice
+      if (!data.amount || !data.basePrice) continue;
+  
+      // Hitung jumlah coin dari modal
+      const coins = data.amount / data.basePrice;
+  
+      await updateDoc(doc(db, "investments", docSnap.id), {
+        coins: Number(coins.toFixed(8)),
+        lastUpdated: new Date()
+      });
+    }
+  }  
+
+  async function migrateGoldData(userId) {
+    const snap = await getDocs(
+      query(
+        collection(db, "investments"),
+        where("userId", "==", userId),
+        where("type", "==", "Emas")
+      )
+    );
+  
+    for (const docSnap of snap.docs) {
+      const data = docSnap.data();
+  
+      // Skip jika sudah benar
+      if (data.grams) continue;
+  
+      // Estimasi gram dari modal & basePrice
+      if (data.amount && data.basePrice) {
+        const estimatedGrams = data.amount / data.basePrice;
+  
+        await updateDoc(doc(db, "investments", docSnap.id), {
+          grams: Number(estimatedGrams.toFixed(3)),
+          lastUpdated: new Date()
+        });
+      }
+    }
+  }
+
+  useEffect(() => {
+  if (user) {
+    migrateCryptoData(user.uid);
+  }
+}, [user]);
+
+  useEffect(() => {
+    if (user) {
+      migrateGoldData(user.uid);
+    }
+  }, [user]);
+  
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -90,6 +167,8 @@ export default function InvestasiPage() {
     return () => unsubscribe();
   }, [user]);
 
+  useLivePrice(investments);
+
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -100,29 +179,56 @@ export default function InvestasiPage() {
   };
 
   const handleSaveInvestment = async () => {
-    if (!formData.name || !formData.amount || !formData.currentVal) {
-      alert("Mohon isi semua data!");
+    if (!formData.name || !formData.amount) {
+      alert("Data belum lengkap");
       return;
     }
+  
     const payload = {
       name: formData.name,
       type: activeTab,
-      amount: parseInt(formData.amount),
-      currentVal: parseInt(formData.currentVal),
+      amount: Number(formData.amount),
       userId: user.uid,
-      updatedAt: serverTimestamp(),
+      lastUpdated: serverTimestamp()
     };
+  
+    if (activeTab === "Saham") {
+      payload.lots = Number(formData.lots);
+    }
+  
+    if (activeTab === "Emas") {
+      payload.symbol = "XAU";
+      payload.grams = Number(formData.grams);
+    }
+  
+    if (activeTab === "Crypto") {
+      payload.symbol = formData.symbol.toLowerCase();
+      payload.coins = Number(formData.coins);
+    }
+  
     try {
       if (editingId) {
+        // ✅ EDIT
         await updateDoc(doc(db, "investments", editingId), payload);
       } else {
+        // ➕ TAMBAH BARU
+        payload.currentVal = 0;
         await addDoc(collection(db, "investments"), payload);
       }
+  
       setIsModalOpen(false);
       setEditingId(null);
-      setFormData({ name: "", amount: "", currentVal: "" });
-    } catch (error) {
-      alert("Gagal menyimpan data.");
+      setFormData({
+        name: "",
+        symbol: "",
+        amount: "",
+        grams: "",
+        coins: "",
+        lots: ""
+      });
+    } catch (err) {
+      console.error(err);
+      alert("Gagal menyimpan data");
     }
   };
 
@@ -138,11 +244,21 @@ export default function InvestasiPage() {
 
   const handleEdit = (inv) => {
     setEditingId(inv.id);
-    setFormData({ name: inv.name, amount: inv.amount, currentVal: inv.currentVal });
+    setActiveTab(inv.type);
+    setFormData({
+      name: inv.name || "",
+      symbol: inv.symbol || "",
+      amount: inv.amount || "",
+      grams: inv.grams || "",
+      coins: inv.coins || "",
+      lots: inv.lots || ""
+    });
     setIsModalOpen(true);
   };
+  
 
   const filteredInvestments = investments.filter(inv => inv.type === activeTab);
+  const totalValuePerAsset = filteredInvestments.reduce((sum, inv) => sum + (inv.currentVal || 0), 0);
 
   const stats = useMemo(() => {
     const totalInvested = investments.reduce((sum, item) => sum + (item.amount || 0), 0);
@@ -217,12 +333,22 @@ export default function InvestasiPage() {
             <p className="text-gray-400 text-xs font-medium uppercase">Nilai Saat Ini</p>
             <h3 className="text-blue-400 text-2xl font-bold mt-1">Rp {stats.totalCurrent.toLocaleString("id-ID")}</h3>
           </div>
-          <div className={`bg-white/5 border border-white/10 p-5 rounded-2xl shadow-xl border-l-4 ${stats.totalProfit >= 0 ? 'border-l-green-500' : 'border-l-red-500'}`}>
-            <p className="text-gray-400 text-xs font-medium uppercase">Total Profit/Loss</p>
-            <h3 className={`text-2xl font-bold mt-1 ${stats.totalProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+          <div className={`bg-white/5 border border-white/10 p-5 rounded-2xl shadow-xl border-l-4 ${stats.totalProfit >= 0 ? 'border-l-green-500' : 'border-l-red-500'} flex flex-col justify-between`}>
+          <p className="text-gray-400 text-xs font-medium uppercase tracking-wider">Total Profit/Loss</p>
+          
+          {/* Container untuk Persen dan Rupiah di satu baris */}
+          <div className="mt-2 flex items-baseline gap-2 flex-wrap">
+            {/* Persentase Besar */}
+            <h3 className={`text-2xl md:text-3xl font-extrabold leading-none ${stats.totalProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
               {stats.totalProfit >= 0 ? '+' : ''}{stats.profitPercentage.toFixed(2)}%
             </h3>
+            
+            {/* Nominal Rupiah di Sebelahnya */}
+            <p className={`text-sm md:text-base font-semibold leading-none ${stats.totalProfit >= 0 ? 'text-green-500/80' : 'text-red-500/80'}`}>
+              ({stats.totalProfit >= 0 ? '+' : '-'} Rp {Math.abs(stats.totalProfit).toLocaleString("id-ID")})
+            </p>
           </div>
+        </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -242,10 +368,29 @@ export default function InvestasiPage() {
 
             <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden backdrop-blur-md">
               <div className="p-4 md:p-6 border-b border-white/10 flex justify-between items-center bg-white/[0.02]">
+                <div>
                 <h2 className="text-sm md:text-lg font-bold">Rincian {activeTab}</h2>
-                <button onClick={() => { setEditingId(null); setFormData({name:"", amount:"", currentVal:""}); setIsModalOpen(true); }} className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[10px] md:text-xs font-bold transition cursor-pointer">
-                  <FaPlus size={10} /> Tambah <span className="hidden sm:inline">{activeTab}</span>
-                </button>
+                <p className="text-[10px] md:text-xs text-blue-400 font-medium">
+                  Total: Rp {totalValuePerAsset.toLocaleString("id-ID")}
+                </p>
+                </div>
+                <button
+                onClick={() => {
+                  setEditingId(null);
+                  setFormData({
+                    name: "",
+                    symbol: "",
+                    amount: "",
+                    grams: "",
+                    coins: "",
+                    lots: ""
+                  });
+                  setIsModalOpen(true);
+                }}
+                className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[10px] md:text-xs font-bold transition cursor-pointer"
+              >
+                <FaPlus size={10} /> Tambah <span className="hidden sm:inline">{activeTab}</span>
+              </button>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
@@ -260,8 +405,40 @@ export default function InvestasiPage() {
                   <tbody className="divide-y divide-white/5">
                     {filteredInvestments.length > 0 ? filteredInvestments.map((inv) => (
                       <tr key={inv.id} className="group hover:bg-white/[0.03] transition">
-                        <td className="px-3 py-4 md:px-6 font-bold text-xs md:text-sm max-w-[80px] md:max-w-none truncate">{inv.name}</td>
-                        <td className="px-2 py-4 md:px-6 text-center text-[11px] md:text-sm whitespace-nowrap">Rp {inv.currentVal?.toLocaleString("id-ID")}</td>
+                        <td className="px-3 py-4 md:px-6 font-bold text-xs md:text-sm max-w-[80px] md:max-w-none truncate">{inv.name}
+                        {/* SAHAM */}
+                        {inv.type === "Saham" && inv.lots && (
+                          <div className="text-[10px] text-gray-400 font-normal mt-0.5">
+                            {inv.lots} lot
+                          </div>
+                        )}
+
+                        {/* EMAS */}
+                        {inv.type === "Emas" && inv.grams && (
+                          <div className="text-[10px] text-gray-400 font-normal mt-0.5">
+                            {inv.grams} gram
+                          </div>
+                        )}
+
+                        {/* ✅ CRYPTO (INI NO. 3) */}
+                        {inv.type === "Crypto" && inv.coins && (
+                          <div className="text-[10px] text-gray-400 font-normal mt-0.5">
+                            {inv.coins} {inv.symbol?.toUpperCase()}
+                          </div>
+                        )}    
+                        </td>
+                        <td className="px-2 py-4 md:px-6 text-center text-[11px] md:text-sm whitespace-nowrap">{/* Baris Atas: Nilai Saat Ini */}
+                          <div className="text-[11px] md:text-sm">
+                            Rp {inv.currentVal?.toLocaleString("id-ID")}
+                          </div>
+                          
+                          {/* Baris Bawah: Nominal Profit/Loss */}
+                          <div className={`text-[9px] md:text-[10px] mt-0.5 font-medium ${
+                            inv.currentVal - inv.amount >= 0 ? 'text-green-400' : 'text-red-400'
+                          }`}>
+                            {inv.currentVal - inv.amount >= 0 ? '+' : '-'} 
+                            Rp {Math.abs(inv.currentVal - inv.amount).toLocaleString("id-ID")}
+                          </div></td>
                         <td className={`px-2 py-4 md:px-6 text-center font-bold text-[11px] md:text-sm ${inv.currentVal - inv.amount >= 0 ? 'text-green-400' : 'text-red-400'}`}>{((inv.currentVal - inv.amount) / inv.amount * 100).toFixed(1)}%</td>
                         <td className="px-3 py-4 md:px-6 text-right">
                           <div className="flex justify-end gap-1 md:gap-2">
