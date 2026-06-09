@@ -606,7 +606,7 @@ useEffect(() => {
           min-w-[140px]
 
           focus:border-blue-500/50
-          focus:outline-none
+          focus:outline-none cursor-pointer
         "
       >
         {Array.from({ length: 12 }).map((_, i) => (
@@ -634,7 +634,7 @@ useEffect(() => {
           min-w-[100px]
 
           focus:border-blue-500/50
-          focus:outline-none
+          focus:outline-none cursor-pointer
         "
       >
         {years.map((y) => (
@@ -725,7 +725,7 @@ useEffect(() => {
 
           hover:bg-red-500/25
 
-          transition-all
+          transition-all cursor-pointer
         "
       >
         Reset
@@ -1008,13 +1008,17 @@ useEffect(() => {
 )}
 
           {/* LIST TRANSAKSI */}
-          <TransactionList 
-            transactions={filtered} 
-            onEdit={editTransaction} 
-            onDelete={deleteTransaction} 
-            onExportExcel={exportExcel}
-            onExportPDF={exportPDF}
-          />
+          <TransactionList
+  transactions={filtered}
+  onEdit={editTransaction}
+  onDelete={deleteTransaction}
+  onExportExcel={() =>
+    exportExcel(filtered, month, year)
+  }
+  onExportPDF={() =>
+    exportPDF(filtered, month, year)
+  }
+/>
         </main>
 
         {/* --- MOBILE BOTTOM NAVIGATION --- */}

@@ -1,4 +1,7 @@
-export const exportPDF = () => {
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+
+export const exportPDF = (transactions, month, year) => {
     const pdf = new jsPDF();
   
     pdf.setFontSize(14);
@@ -10,7 +13,7 @@ export const exportPDF = () => {
     autoTable(pdf, {
       startY: 30,
       head: [["Tanggal", "Jenis", "Kategori", "Catatan", "Jumlah"]],
-      body: filtered.map((t) => [
+      body: transactions.map((t) => [
         t.transactionDate.seconds 
         ? t.transactionDate.toDate().toLocaleDateString("id-ID") 
         : new Date(t.transactionDate).toLocaleDateString("id-ID"),
