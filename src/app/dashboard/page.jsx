@@ -48,7 +48,6 @@ export default function DashboardPage() {
     const today = new Date();
     return today.toISOString().split("T")[0]; // yyyy-mm-dd
   });
-  
 
   const [transactions, setTransactions] = useState([]);
   const [editingId, setEditingId] = useState(null);
@@ -56,6 +55,9 @@ export default function DashboardPage() {
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth());
   const [year, setYear] = useState(now.getFullYear());
+
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   const years = Array.from({ length: 21 }, (_, i) => year - 10 + i);
 
@@ -212,18 +214,41 @@ useEffect(() => {
   }, [user]);
 
   /* 📅 FILTER BULAN */
-const filtered = useMemo(() => {
-  return transactions.filter((t) => {
-    if (!t.transactionDate) return false;
-    
-    // Cek apakah itu Firebase Timestamp atau Date objek
-    const d = t.transactionDate.seconds 
-      ? t.transactionDate.toDate() 
-      : new Date(t.transactionDate);
-
-    return d.getMonth() === month && d.getFullYear() === year;
-  });
-}, [transactions, month, year]);
+  const filtered = useMemo(() => {
+    return transactions.filter((t) => {
+  
+      if (!t.transactionDate) return false;
+  
+      const d = t.transactionDate.seconds
+        ? t.transactionDate.toDate()
+        : new Date(t.transactionDate);
+  
+      // MODE CUSTOM RANGE
+      if (startDate && endDate) {
+  
+        const start = new Date(startDate);
+  
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+  
+        return d >= start && d <= end;
+      }
+  
+      // MODE BULAN TAHUN (DEFAULT)
+  
+      return (
+        d.getMonth() === month &&
+        d.getFullYear() === year
+      );
+    });
+  
+  }, [
+    transactions,
+    month,
+    year,
+    startDate,
+    endDate
+  ]);
   
 
   /* 💰 TOTAL */
@@ -525,22 +550,239 @@ const filtered = useMemo(() => {
     <FinancialTips />
     
   </div>
-        {/* FILTER */}
-        <div className="flex flex-wrap gap-3">
+
+  {/* FILTER */}
+<div
+  className="
+    bg-gradient-to-r
+    from-blue-500/10
+    via-indigo-500/10
+    to-purple-500/10
+
+    backdrop-blur-xl
+
+    border border-white/10
+    rounded-2xl
+
+    p-4
+    mb-6
+  "
+>
+  {/* DESKTOP */}
+  <div className="hidden lg:flex items-center gap-6">
+
+    {/* PERIODE */}
+    <div className="flex items-center gap-3">
+
+      <div
+        className="
+          px-3 py-2
+          rounded-xl
+
+          bg-blue-500/15
+          border border-blue-500/20
+
+          text-blue-300
+          text-sm
+          font-medium
+        "
+      >
+        📅 Periode
+      </div>
+
+      <select
+        value={month}
+        onChange={(e) => setMonth(Number(e.target.value))}
+        className="
+          bg-black/40
+          border border-white/10
+
+          rounded-xl
+
+          px-4 py-2
+
+          text-white
+
+          min-w-[140px]
+
+          focus:border-blue-500/50
+          focus:outline-none
+        "
+      >
+        {Array.from({ length: 12 }).map((_, i) => (
+          <option key={i} value={i}>
+            {new Date(0, i).toLocaleString("id-ID", {
+              month: "long",
+            })}
+          </option>
+        ))}
+      </select>
+
+      <select
+        value={year}
+        onChange={(e) => setYear(Number(e.target.value))}
+        className="
+          bg-black/40
+          border border-white/10
+
+          rounded-xl
+
+          px-4 py-2
+
+          text-white
+
+          min-w-[100px]
+
+          focus:border-blue-500/50
+          focus:outline-none
+        "
+      >
+        {years.map((y) => (
+          <option key={y} value={y}>
+            {y}
+          </option>
+        ))}
+      </select>
+    </div>
+
+    <div className="w-px h-8 bg-white/10" />
+
+    {/* FILTER KHUSUS */}
+    <div className="flex items-center gap-3">
+
+      <div
+        className="
+          px-3 py-2
+          rounded-xl
+
+          bg-purple-500/15
+          border border-purple-500/20
+
+          text-purple-300
+          text-sm
+          font-medium
+        "
+      >
+        🔎 Filter Custom
+      </div>
+
+      <input
+        type="date"
+        value={startDate}
+        onChange={(e) => setStartDate(e.target.value)}
+        className="
+          bg-black/40
+          border border-white/10
+
+          rounded-xl
+
+          px-4 py-2
+
+          text-white
+
+          focus:border-purple-500/50
+          focus:outline-none
+        "
+      />
+
+      <span className="text-gray-400">
+        →
+      </span>
+
+      <input
+        type="date"
+        value={endDate}
+        onChange={(e) => setEndDate(e.target.value)}
+        className="
+          bg-black/40
+          border border-white/10
+
+          rounded-xl
+
+          px-4 py-2
+
+          text-white
+
+          focus:border-purple-500/50
+          focus:outline-none
+        "
+      />
+
+      <button
+        onClick={() => {
+          setStartDate("");
+          setEndDate("");
+        }}
+        className="
+          px-5 py-2
+
+          rounded-xl
+
+          bg-red-500/15
+          border border-red-500/20
+
+          text-red-400
+
+          hover:bg-red-500/25
+
+          transition-all
+        "
+      >
+        Reset
+      </button>
+    </div>
+  </div>
+
+  {/* MOBILE & TABLET */}
+  <div className="lg:hidden space-y-4">
+
+    {/* PERIODE */}
+    <div>
+      <div
+        className="
+          inline-flex
+          items-center
+
+          px-3 py-2
+
+          rounded-xl
+
+          bg-blue-500/15
+          border border-blue-500/20
+
+          text-blue-300
+          text-sm
+          font-medium
+
+          mb-3
+        "
+      >
+        📅 Periode
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+
         <select
           value={month}
           onChange={(e) => setMonth(Number(e.target.value))}
           className="
-            bg-black/40 text-white p-3 rounded-xl cursor-pointer
+            bg-black/40
             border border-white/10
-            hover:border-blue-500/50 hover:bg-white/10
-            focus:outline-none focus:ring-2 focus:ring-blue-500/50
-            transition-all duration-200
+
+            rounded-xl
+
+            px-4 py-3
+
+            text-white
+
+            w-full
           "
         >
           {Array.from({ length: 12 }).map((_, i) => (
-            <option key={i} value={i} className="bg-gray-900">
-              {new Date(0, i).toLocaleString("id-ID", { month: "long" })}
+            <option key={i} value={i}>
+              {new Date(0, i).toLocaleString("id-ID", {
+                month: "long",
+              })}
             </option>
           ))}
         </select>
@@ -548,39 +790,126 @@ const filtered = useMemo(() => {
         <select
           value={year}
           onChange={(e) => setYear(Number(e.target.value))}
-          size={1} // tetap dropdown normal
           className="
-            bg-black/40 text-white p-3 rounded-xl cursor-pointer
+            bg-black/40
             border border-white/10
-            hover:border-purple-500/50 hover:bg-white/10
-            focus:outline-none focus:ring-2 focus:ring-purple-500/50
-            transition-all duration-200
+
+            rounded-xl
+
+            px-4 py-3
+
+            text-white
+
+            w-full
           "
         >
           {years.map((y) => (
-            <option
-              key={y}
-              value={y}
-              className="bg-gray-900"
-            >
+            <option key={y} value={y}>
               {y}
             </option>
           ))}
         </select>
 
-          <button
-            onClick={() => exportExcel(filtered, month, year)}
-            className="px-4 py-3 bg-green-600/20 rounded-xl cursor-pointer"
-          >
-            📊 Excel
-          </button>
-          <button
-            onClick={exportPDF}
-            className="px-4 py-3 bg-red-600/20 rounded-xl cursor-pointer"
-          >
-            📄 PDF
-          </button>
-        </div>
+      </div>
+    </div>
+
+    <div className="border-t border-white/10" />
+
+    {/* FILTER KHUSUS */}
+    <div>
+
+      <div
+        className="
+          inline-flex
+          items-center
+
+          px-3 py-2
+
+          rounded-xl
+
+          bg-purple-500/15
+          border border-purple-500/20
+
+          text-purple-300
+          text-sm
+          font-medium
+
+          mb-3
+        "
+      >
+        🔎 Filter Khusus
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+
+        <input
+          type="date"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+          className="
+            bg-black/40
+            border border-white/10
+
+            rounded-xl
+
+            px-4 py-3
+
+            text-white
+
+            w-full
+          "
+        />
+
+        <input
+          type="date"
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
+          className="
+            bg-black/40
+            border border-white/10
+
+            rounded-xl
+
+            px-4 py-3
+
+            text-white
+
+            w-full
+          "
+        />
+
+      </div>
+
+      <button
+        onClick={() => {
+          setStartDate("");
+          setEndDate("");
+        }}
+        className="
+          w-full
+          mt-3
+
+          px-4 py-3
+
+          rounded-xl
+
+          bg-red-500/15
+          border border-red-500/20
+
+          text-red-400
+
+          hover:bg-red-500/25
+
+          transition-all
+        "
+      >
+        ↺ Reset Filter
+      </button>
+
+    </div>
+
+  </div>
+</div>
 
         {/* STAT */}
         <div className="grid md:grid-cols-3 gap-4 ">
@@ -613,8 +942,8 @@ const filtered = useMemo(() => {
 
           {/* CHART */}
           <div className="bg-white/5 p-6 rounded-2xl flex flex-col">
-            <h2 className="font-semibold text-lg mb-3">Grafik Bulanan</h2>
-            <div className="flex-1 h-[300px]">
+            <h2 className="font-semibold text-lg mb-8">Grafik Bulanan</h2>
+            <div className="flex-1 h-[300px] mb-5">
               <FinanceChart income={income || 0} expense={expense || 0} />
             </div>
             {/* BOX BARU: Statistik Tambahan di Bawah Grafik */}
@@ -648,6 +977,35 @@ const filtered = useMemo(() => {
             </div>
           </div>
         </div>
+
+        {startDate && endDate && (
+  <div className="
+    mb-4
+    bg-blue-500/10
+    border border-blue-500/20
+    rounded-xl
+    px-4 py-3
+    text-sm
+    text-blue-300
+  ">
+    📅 Menampilkan transaksi dari{" "}
+    <strong>
+      {new Date(startDate).toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })}
+    </strong>
+    {" "}sampai{" "}
+    <strong>
+      {new Date(endDate).toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })}
+    </strong>
+  </div>
+)}
 
           {/* LIST TRANSAKSI */}
           <TransactionList 
