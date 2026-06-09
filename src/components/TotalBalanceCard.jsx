@@ -1,14 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
-// Import icon mata untuk tombol sensor
-import { Eye, EyeOff } from "lucide-react";
+import { useState } from "react";
+import { Eye, EyeOff, Wallet, ArrowUpRight, ArrowDownRight } from "lucide-react";
 
 export default function TotalBalanceCard({ transactions }) {
-  // State untuk mengontrol sensor saldo
   const [isVisible, setIsVisible] = useState(true);
 
-  // Menghitung akumulasi dari seluruh data tanpa filter bulan
   const totalIncome = transactions
     .filter((t) => t.type === "income")
     .reduce((a, b) => a + b.amount, 0);
@@ -19,51 +16,71 @@ export default function TotalBalanceCard({ transactions }) {
 
   const totalBalance = totalIncome - totalExpense;
 
-  return (
-    <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 to-indigo-700 p-6 rounded-2xl shadow-xl mb-8">
-      {/* Dekorasi Background */}
-      <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white/10 rounded-full blur-2xl" />
+  const formatCurrency = (amount) =>
+    `Rp ${amount.toLocaleString("id-ID")}`;
 
-      <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <p className="text-blue-100 text-sm font-medium uppercase tracking-wider">
-              Total Saldo Keseluruhan
-            </p>
-            {/* Tombol Sensor */}
-            <button
-              onClick={() => setIsVisible(!isVisible)}
-              className="text-blue-200 hover:text-white transition-colors p-1 cursor-pointer"
-              title={isVisible ? "Sembunyikan Saldo" : "Tampilkan Saldo"}
-            >
-              {isVisible ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
+  return (
+    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 p-8 shadow-2xl">
+
+      <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-white/10 blur-3xl" />
+      <div className="absolute -bottom-20 -left-20 w-64 h-64 rounded-full bg-white/10 blur-3xl" />
+
+      <div className="relative z-10">
+
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Wallet className="text-white" size={24} />
+            <span className="text-blue-100 font-bold text-xl">
+              TOTAL SALDO KESELURUHAN
+            </span>
           </div>
 
-          <h2 className="text-3xl md:text-4xl font-extrabold text-white mt-1">
-            {isVisible 
-              ? `Rp ${totalBalance.toLocaleString("id-ID")}` 
-              : "Rp ••••••••"}
-          </h2>
+          <button
+            onClick={() => setIsVisible(!isVisible)}
+            className="text-white/80 hover:text-white cursor-pointer"
+          >
+            {isVisible ? <EyeOff /> : <Eye />}
+          </button>
         </div>
 
-        <div className="flex gap-4 mt-4 md:mt-0 pt-4 md:pt-0 border-t border-white/10 md:border-none">
-          <div className="text-center md:text-right">
-            <p className="text-[10px] text-blue-100 uppercase">Total Masuk</p>
-            <p className="text-green-300 font-bold">
-              {isVisible 
-                ? `+ ${totalIncome.toLocaleString("id-ID")}` 
+        <h2 className="text-4xl font-bold text-white mt-6">
+          {isVisible
+            ? formatCurrency(totalBalance)
+            : "Rp •••••••••"}
+        </h2>
+
+        <div className="grid grid-cols-2 gap-4 mt-8">
+
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <ArrowUpRight className="text-green-300" />
+              <span className="text-sm text-white/80">
+                Pemasukan
+              </span>
+            </div>
+
+            <p className="font-bold text-green-300">
+              {isVisible
+                ? formatCurrency(totalIncome)
                 : "••••••"}
             </p>
           </div>
-          <div className="text-center md:text-right">
-            <p className="text-[10px] text-blue-100 uppercase">Total Keluar</p>
-            <p className="text-red-300 font-bold">
-              {isVisible 
-                ? `- ${totalExpense.toLocaleString("id-ID")}` 
+
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <ArrowDownRight className="text-red-300" />
+              <span className="text-sm text-white/80">
+                Pengeluaran
+              </span>
+            </div>
+
+            <p className="font-bold text-red-300">
+              {isVisible
+                ? formatCurrency(totalExpense)
                 : "••••••"}
             </p>
           </div>
+
         </div>
       </div>
     </div>
