@@ -20,7 +20,7 @@ import {
   deleteDoc,
   serverTimestamp 
 } from "firebase/firestore";
-import LoadingScreen from "@/components/LoadingScreen";
+import LoadingScreen from "@/components/dashboard/LoadingScreen";
 
 const Avatar = ({ name }) => (
   <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-bold text-white border border-white/20">

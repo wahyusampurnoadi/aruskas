@@ -20,7 +20,7 @@ export default function TotalBalanceCard({ transactions }) {
     `Rp ${amount.toLocaleString("id-ID")}`;
 
   return (
-    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 p-8 shadow-2xl">
+    <div className="relative overflow-hidden bg-gradient-to-br from-blue-500/70 via-indigo-500/70 to-purple-500/70 backdrop-blur-2xl border border-white/20 shadow-[0_8px_32px_rgba(31,38,135,0.37)] rounded-3xl p-10">
 
       <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-white/10 blur-3xl" />
       <div className="absolute -bottom-20 -left-20 w-64 h-64 rounded-full bg-white/10 blur-3xl" />
@@ -51,7 +51,7 @@ export default function TotalBalanceCard({ transactions }) {
 
         <div className="grid grid-cols-2 gap-4 mt-8">
 
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4">
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 hover:scale-[1.01] transition-all duration-300">
             <div className="flex items-center gap-2 mb-2">
               <ArrowUpRight className="text-green-300" />
               <span className="text-sm text-white/80">
@@ -66,7 +66,7 @@ export default function TotalBalanceCard({ transactions }) {
             </p>
           </div>
 
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4">
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 hover:scale-[1.01] transition-all duration-300">
             <div className="flex items-center gap-2 mb-2">
               <ArrowDownRight className="text-red-300" />
               <span className="text-sm text-white/80">

@@ -29,7 +29,7 @@ export default function FinanceChart({ income = 0, expense = 0 }) {
     `Rp ${value.toLocaleString("id-ID")}`;
 
   return (
-    <div className="w-full h-[320px]">
+    <div className="w-full h-[320px] bg-white/2 backdrop-blur-xl border border-white/10 rounded-3xl">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={data}

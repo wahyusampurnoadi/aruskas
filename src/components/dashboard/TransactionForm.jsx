@@ -63,14 +63,20 @@ export default function TransactionForm({
         placeholder="Jumlah (Rp)"
         value={amount}
         onChange={handleAmountChange}
-        className="w-full p-3 rounded-xl bg-black/40"
+        className="w-full p-3 rounded-xl bg-black/40 border border-white/10
+        text-white outline-none
+        focus:ring-2 focus:ring-blue-500/50
+        scheme-dark"
       />
 
       <input
         placeholder="Kategori"
         value={category}
         onChange={(e) => setCategory(e.target.value)}
-        className="w-full p-3 rounded-xl bg-black/40"
+        className="w-full p-3 rounded-xl bg-black/40 border border-white/10
+        text-white outline-none
+        focus:ring-2 focus:ring-blue-500/50
+        scheme-dark"
       />
 
       <textarea
@@ -78,7 +84,10 @@ export default function TransactionForm({
         value={note}
         onChange={(e) => setNote(e.target.value)}
         rows={3}
-        className="w-full p-3 rounded-xl bg-black/40 resize-none"
+        className="w-full p-3 rounded-xl bg-black/40 border border-white/10
+        text-white outline-none
+        focus:ring-2 focus:ring-blue-500/50
+        scheme-dark"
       />
 
       <div className="space-y-2">

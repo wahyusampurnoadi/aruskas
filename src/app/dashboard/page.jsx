@@ -17,11 +17,11 @@ import {
   updateDoc,
   doc,
 } from "firebase/firestore";
-import FinanceChart from "@/components/FinanceChart";
-import FinancialTips from "@/components/FinancialTips";
-import TotalBalanceCard from '@/components/TotalBalanceCard';
-import LoadingScreen from "@/components/LoadingScreen";
-import TransactionList from "@/components/TransactionList";
+import FinanceChart from "@/components/dashboard/FinanceChart";
+import FinancialTips from "@/components/dashboard/FinancialTips";
+import TotalBalanceCard from '@/components/dashboard/TotalBalanceCard';
+import LoadingScreen from "@/components/dashboard/LoadingScreen";
+import TransactionList from "@/components/dashboard/TransactionList";
 import Swal from 'sweetalert2';
 import BudgetTracker from "@/components/dashboard/BudgetTracker";
 import Avatar from "@/components/dashboard/Avatar";

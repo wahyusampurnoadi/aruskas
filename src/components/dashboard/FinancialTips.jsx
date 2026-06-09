@@ -20,7 +20,7 @@ export default function FinancialTips() {
     }, []);
   
     return (
-      <div className="bg-white/5 border border-white/10 p-6 rounded-2xl flex flex-col justify-center h-full">
+      <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-6">
         <div className="flex items-center gap-2 mb-2">
           <span className="text-blue-400">💡</span>
           <h3 className="text-gray-400 text-xs font-semibold uppercase tracking-wider">

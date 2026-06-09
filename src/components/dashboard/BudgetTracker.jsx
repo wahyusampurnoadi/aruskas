@@ -23,10 +23,10 @@ export default function BudgetTracker({ totalExpense }) {
     };
   
     return (
-      <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-4">
+      <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-6">
         <div className="flex justify-between items-center">
           <div>
-            <h3 className="text-gray-400 text-sm font-medium">Atur Pengeluaranmu</h3>
+            <h3 className="text-gray-400 text-sm font-medium">Atur Pengeluaranmu bulan ini</h3>
             {isEditing ? (
               <form onSubmit={saveBudget} className="flex gap-2 mt-1">
                 <input
