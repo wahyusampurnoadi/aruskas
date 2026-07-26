@@ -4,11 +4,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Swal from "sweetalert2";
 import { toast } from "sonner";
+import { Plus, ArrowDownRight, ArrowUpRight } from "lucide-react";
 
 import { useAuth } from "@/context/AuthContext";
 import useTransactions from "@/app/hooks/useTransactions";
 import useSavingGoals from "@/app/hooks/useSavingGoals";
 import { uploadImage } from "@/lib/cloudinary";
+import { formatCurrency } from "@/lib/utils";
 
 import {
   createTransaction,
@@ -33,6 +35,8 @@ export default function DashboardPage() {
 
   const { user, loading } = useAuth();
   const { goals } = useSavingGoals();
+
+  const [currency, setCurrency] = useState("IDR");
 
   const {
     transactions,
@@ -117,6 +121,18 @@ export default function DashboardPage() {
     return `${monthNames[month]} ${year}`;
   }, [filterMode, startDate, endDate, month, year]);
 
+  // Sinkronisasi mata uang aktif dari localStorage & event listener global
+  useEffect(() => {
+    const updateCurrency = () => {
+      const saved = localStorage.getItem("app_currency") || "IDR";
+      setCurrency(saved);
+    };
+
+    updateCurrency();
+    window.addEventListener("currencyChange", updateCurrency);
+    return () => window.removeEventListener("currencyChange", updateCurrency);
+  }, []);
+
   useEffect(() => {
     if (!loading && !user) {
       router.replace("/login");
@@ -128,19 +144,14 @@ export default function DashboardPage() {
 
   const resetForm = () => {
     setEditingId(null);
-
     setType("income");
     setAmount("");
-
     setCategory("");
     setNote("");
-
     setSelectedGoalId("");
-
     setImageFile(null);
     setImagePreview("");
     setExistingImageUrl("");
-
     setTransactionDate(new Date().toISOString().split("T")[0]);
   };
 
@@ -157,7 +168,6 @@ export default function DashboardPage() {
 
   const handleFileUpload = (e) => {
     const file = e.target.files?.[0];
-
     if (!file) return;
 
     if (file.size > 2 * 1024 * 1024) {
@@ -166,29 +176,20 @@ export default function DashboardPage() {
     }
 
     setImageFile(file);
-
     const reader = new FileReader();
-
     reader.onload = () => {
       setImagePreview(reader.result);
     };
-
     reader.readAsDataURL(file);
   };
 
   const loadTransaction = (transaction) => {
     setEditingId(transaction.id);
-
     setType(transaction.type);
-    setAmount(
-      new Intl.NumberFormat("id-ID").format(transaction.amount || 0)
-    );
-
+    setAmount(new Intl.NumberFormat("id-ID").format(transaction.amount || 0));
     setCategory(transaction.category || "");
     setNote(transaction.note || "");
-
     setSelectedGoalId(transaction.wishlistGoalId || "");
-
     setExistingImageUrl(transaction.imageUrl || "");
     setImagePreview(transaction.imageUrl || "");
     setImageFile(null);
@@ -209,7 +210,6 @@ export default function DashboardPage() {
 
   const editTransaction = (transaction) => {
     loadTransaction(transaction);
-
     setShowTransactionModal(true);
 
     setTimeout(() => {
@@ -261,12 +261,8 @@ export default function DashboardPage() {
         note,
         transactionDate: new Date(transactionDate),
         imageUrl: finalImageUrl,
-
         wishlistGoalId:
-          type === "expense" && category === "Wishlist"
-            ? selectedGoalId
-            : null,
-
+          type === "expense" && category === "Wishlist" ? selectedGoalId : null,
         wishlistName:
           type === "expense" && category === "Wishlist"
             ? selectedGoal?.name || ""
@@ -337,15 +333,28 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen text-white">
       <main className="relative z-10 space-y-8 p-4 md:p-6 lg:p-8">
-        <TotalBalanceCard
-          totalBalance={totalBalance}
-          totalIncome={totalIncome}
-          totalExpense={totalExpense}
-          showBalance={showBalance}
-          toggleBalance={() => setShowBalance(!showBalance)}
-        />
+        {/* TOTAL SALDO CARD */}
+        <div className="relative">
+          <TotalBalanceCard
+            totalBalance={totalBalance}
+            totalIncome={totalIncome}
+            totalExpense={totalExpense}
+            showBalance={showBalance}
+            toggleBalance={() => setShowBalance(!showBalance)}
+            currency={currency}
+          />
+          <div className="mt-4 sm:mt-0 sm:absolute sm:top-6 sm:right-6">
+            <button
+              onClick={openCreateModal}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 font-bold text-sm text-white shadow-lg transition active:scale-95 cursor-pointer border border-white/10"
+            >
+              <Plus className="w-4 h-4 stroke-[3]" />
+              <span>Tambah Transaksi</span>
+            </button>
+          </div>
+        </div>
 
-        <BudgetTracker totalExpense={expense} />
+        <BudgetTracker totalExpense={expense} currency={currency} />
 
         <DashboardFilter
           month={month}
@@ -364,71 +373,10 @@ export default function DashboardPage() {
           handleApplyCustomFilter={handleApplyCustomFilter}
         />
 
-        {/* HEADER DASHBOARD */}
-        <section className="relative overflow-hidden bg-gradient-to-r from-slate-900/80 via-indigo-950/30 to-slate-900/80 border border-white/10 rounded-3xl p-6 sm:p-8 backdrop-blur-2xl shadow-2xl">
-          {/* Ambient Lighting Glow Background */}
-          <div className="absolute -top-24 -left-24 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            <div className="space-y-3">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold tracking-wider uppercase">
-                <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse" />
-                Financial Overview
-              </div>
-
-              <div>
-                <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-white">
-                  Dashboard Keuangan
-                </h2>
-                <p className="text-slate-400 text-sm mt-1 font-normal">
-                  Ringkasan dan analisis performa arus kas periode aktif
-                </p>
-              </div>
-
-              {/* Badges Pemasukan & Pengeluaran */}
-              <div className="flex flex-wrap gap-3 pt-2">
-                <div className="flex items-center gap-3 px-4 py-2 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 backdrop-blur-md">
-                  <div className="p-1.5 rounded-xl bg-emerald-500/20">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-[10px] uppercase font-bold text-emerald-500/80 tracking-wider">Pemasukan</p>
-                    <p className="text-sm font-bold text-emerald-300">Rp {income.toLocaleString("id-ID")}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 px-4 py-2 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 backdrop-blur-md">
-                  <div className="p-1.5 rounded-xl bg-rose-500/20">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-[10px] uppercase font-bold text-rose-500/80 tracking-wider">Pengeluaran</p>
-                    <p className="text-sm font-bold text-rose-300">Rp {expense.toLocaleString("id-ID")}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <button
-              onClick={openCreateModal}
-              className="relative group overflow-hidden w-full lg:w-auto flex items-center justify-center gap-3 px-7 py-4 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 hover:from-blue-500 hover:to-indigo-500 font-bold text-white transition-all duration-300 shadow-[0_0_30px_rgba(79,70,229,0.35)] hover:shadow-[0_0_40px_rgba(79,70,229,0.5)] active:scale-95"
-            >
-              <span className="text-xl">+</span>
-              <span>Tambah Transaksi</span>
-            </button>
-          </div>
-        </section>
-
         {/* CHART + STATS */}
         <section className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* CONTAINER GRAFIK */}
-          <div className="lg:col-span-3 rounded-3xl border border-white/10 bg-slate-900/60 backdrop-blur-2xl p-6 sm:p-8 flex flex-col justify-between shadow-xl relative overflow-hidden">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div className="lg:col-span-3 rounded-3xl border border-white/10 bg-slate-900/60 backdrop-blur-2xl p-6 sm:p-8 flex flex-col justify-between shadow-xl relative overflow-hidden space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-bold uppercase tracking-widest text-indigo-400">
                   Analisis Visual
@@ -446,11 +394,41 @@ export default function DashboardPage() {
             <div className="w-full h-[320px]">
               <FinanceChart income={income || 0} expense={expense || 0} />
             </div>
+
+            {/* RINCIAN PEMASUKAN & PENGELUARAN AKTIF */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-white/10">
+              <div className="flex items-center gap-3 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 backdrop-blur-md">
+                <div className="p-2.5 rounded-xl bg-emerald-500/20 text-emerald-400">
+                  <ArrowDownRight className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-emerald-400/80 uppercase tracking-wider">
+                    Pemasukan Aktif
+                  </p>
+                  <p className="text-lg font-extrabold text-emerald-300 mt-0.5">
+                    {formatCurrency(income, currency)}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 backdrop-blur-md">
+                <div className="p-2.5 rounded-xl bg-rose-500/20 text-rose-400">
+                  <ArrowUpRight className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-rose-400/80 uppercase tracking-wider">
+                    Pengeluaran Aktif
+                  </p>
+                  <p className="text-lg font-extrabold text-rose-300 mt-0.5">
+                    {formatCurrency(expense, currency)}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* KARTU STATISTIK RINGKAS */}
           <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-4">
-            {/* Total Transaksi */}
             <div className="relative overflow-hidden rounded-3xl bg-slate-900/60 border border-white/10 p-6 backdrop-blur-2xl transition-all duration-300 hover:border-white/20">
               <div className="flex justify-between items-start">
                 <div>
@@ -468,7 +446,6 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Terpakai */}
             <div className="relative overflow-hidden rounded-3xl bg-slate-900/60 border border-white/10 p-6 backdrop-blur-2xl transition-all duration-300 hover:border-white/20">
               <div className="flex justify-between items-start">
                 <div>
@@ -486,7 +463,6 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Status */}
             <div className="relative overflow-hidden rounded-3xl bg-slate-900/60 border border-white/10 p-6 backdrop-blur-2xl transition-all duration-300 hover:border-white/20">
               <div className="flex justify-between items-start">
                 <div>
@@ -516,7 +492,6 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* STATE LOADING & ERROR */}
         {loadingTransactions && (
           <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-gray-300">
             Memuat transaksi...
@@ -529,7 +504,6 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* LIST TRANSAKSI */}
         {!loadingTransactions && !errorTransactions && (
           <TransactionList
             transactions={transactions}
@@ -540,7 +514,6 @@ export default function DashboardPage() {
           />
         )}
 
-        {/* MODAL TRANSAKSI */}
         {showTransactionModal && (
           <div className="fixed inset-0 z-[999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
             <div className="bg-[#111827] border border-white/10 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
@@ -551,7 +524,7 @@ export default function DashboardPage() {
 
                 <button
                   onClick={() => setShowTransactionModal(false)}
-                  className="text-gray-400 hover:text-white text-xl"
+                  className="text-gray-400 hover:text-white text-xl cursor-pointer"
                 >
                   ✕
                 </button>

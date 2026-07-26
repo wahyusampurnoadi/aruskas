@@ -192,12 +192,12 @@ export default function TransactionList({
         </div>
 
         {/* BARIS KONTROL FILTER */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-4 border-t border-white/5">
-          {/* TIPE TRANSAKSI PILLS */}
-          <div className="flex p-1 bg-slate-950/60 rounded-2xl border border-white/5 w-full sm:w-auto">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-4 border-t border-white/5 overflow-hidden">
+          {/* TIPE TRANSAKSI PILLS (DENGAN RESPONSIVE SCROLL & PENYESUAIAN LEBAR) */}
+          <div className="flex items-center gap-1 p-1 bg-slate-950/60 rounded-2xl border border-white/5 w-full lg:w-auto overflow-x-auto max-w-full">
             <button
               onClick={() => setFilterType("all")}
-              className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex-1 min-w-[70px] sm:flex-none px-3 sm:px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer text-center ${
                 filterType === "all"
                   ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg"
                   : "text-slate-400 hover:text-white"
@@ -207,7 +207,7 @@ export default function TransactionList({
             </button>
             <button
               onClick={() => setFilterType("income")}
-              className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex-1 min-w-[90px] sm:flex-none px-3 sm:px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer text-center ${
                 filterType === "income"
                   ? "bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/20"
                   : "text-slate-400 hover:text-white"
@@ -217,7 +217,7 @@ export default function TransactionList({
             </button>
             <button
               onClick={() => setFilterType("expense")}
-              className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex-1 min-w-[90px] sm:flex-none px-3 sm:px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer text-center ${
                 filterType === "expense"
                   ? "bg-rose-500 text-white shadow-lg shadow-rose-500/20"
                   : "text-slate-400 hover:text-white"
@@ -299,7 +299,6 @@ export default function TransactionList({
           filteredTransactions.map((t) => {
             const isExpanded = expandedId === t.id;
             const note = t.note || "";
-            // Menurunkan threshold karakter agar opsi baca selengkapnya muncul lebih awal di HP
             const showReadMore = note.length > 35;
             const wishlistLabel = t.wishlistName || t.goalName || t.wishlistTitle || "";
             const categoryConfig = getCategoryConfig(t.category);
@@ -339,7 +338,7 @@ export default function TransactionList({
                         )}
                       </div>
 
-                      {/* CATATAN / DESKRIPSI (OPTIMAL DITAMPILAN MOBILE) */}
+                      {/* CATATAN / DESKRIPSI */}
                       {note && (
                         <div className="pt-0.5">
                           <p

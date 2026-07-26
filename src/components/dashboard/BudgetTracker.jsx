@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { Edit3, Check, X, Lightbulb } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
 
-export default function BudgetTracker({ totalExpense = 0 }) {
+export default function BudgetTracker({ totalExpense = 0, currency = "IDR" }) {
   const [isEditing, setIsEditing] = useState(false);
   const [budget, setBudget] = useState(800000);
   const [budgetInput, setBudgetInput] = useState("800.000");
@@ -70,21 +71,14 @@ export default function BudgetTracker({ totalExpense = 0 }) {
     return () => clearInterval(interval);
   }, [tips.length]);
 
-  // Helper render mata uang: Rp dan Angka sejajar dan seragam
-  const renderFormattedCurrency = (value, sizeClass = "text-xl sm:text-2xl") => {
-    const number = Number(value || 0);
-    const formatted = Math.abs(number).toLocaleString("id-ID");
-    const sign = number < 0 ? "-" : "";
-
-    return (
-      <span className={`inline-flex items-baseline gap-1.5 font-bold tracking-tight ${sizeClass}`}>
-        <span>Rp</span>
-        <span>
-          {sign}
-          {formatted}
-        </span>
-      </span>
-    );
+  // Helper untuk mendapatkan simbol mata uang pada input form edit
+  const getCurrencySymbol = (curr) => {
+    switch (curr) {
+      case "USD": return "$";
+      case "EUR": return "€";
+      case "GBP": return "£";
+      default: return "Rp";
+    }
   };
 
   return (
@@ -102,26 +96,26 @@ export default function BudgetTracker({ totalExpense = 0 }) {
             <div>
               <div className="flex items-center gap-2">
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
-                  Budget Bulanan
+                  Batas Pengeluaran
                 </p>
                 <button
                   onClick={openEditMode}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-amber-400/20 bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-300 transition hover:bg-amber-500/20 active:scale-95"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-amber-400/20 bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-300 transition hover:bg-amber-500/20 active:scale-95 cursor-pointer"
                 >
                   <Edit3 className="h-3 w-3" />
-                  <span>Edit</span>
+                  <span>Ubah Batas</span>
                 </button>
               </div>
-              <div className="mt-1 text-white">
-                {renderFormattedCurrency(budget, "text-2xl sm:text-3xl font-black")}
+              <div className="mt-1 text-white text-2xl sm:text-3xl font-black">
+                {formatCurrency(budget, currency)}
               </div>
             </div>
 
-            {/* SISA BUDGET */}
+            {/* SISA BATAS BELANJA */}
             <div className="sm:text-right border-t sm:border-t-0 border-white/10 pt-3 sm:pt-0">
-              <p className="text-xs font-medium text-slate-400">Sisa Budget</p>
-              <div className={isOverBudget ? "text-rose-400" : "text-emerald-400"}>
-                {renderFormattedCurrency(remaining, "text-xl sm:text-2xl font-bold")}
+              <p className="text-xs font-medium text-slate-400">Sisa Batas Belanja</p>
+              <div className={`text-xl sm:text-2xl font-bold ${isOverBudget ? "text-rose-400" : "text-emerald-400"}`}>
+                {formatCurrency(remaining, currency)}
               </div>
             </div>
           </div>
@@ -130,18 +124,18 @@ export default function BudgetTracker({ totalExpense = 0 }) {
           <div className="rounded-2xl border border-cyan-500/30 bg-slate-900/80 p-4 shadow-lg backdrop-blur-md">
             <div className="mb-3 flex items-center justify-between">
               <p className="text-xs font-bold uppercase tracking-wider text-cyan-400">
-                Ubah Target Budget
+                Atur Batas Pengeluaran
               </p>
               <div className="flex gap-2">
                 <button
                   onClick={handleSaveBudget}
-                  className="inline-flex items-center gap-1 rounded-xl bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white shadow-md hover:bg-emerald-400"
+                  className="inline-flex items-center gap-1 rounded-xl bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white shadow-md hover:bg-emerald-400 cursor-pointer"
                 >
                   <Check className="h-3.5 w-3.5" /> Simpan
                 </button>
                 <button
                   onClick={handleCancelEdit}
-                  className="inline-flex items-center gap-1 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-white/10"
+                  className="inline-flex items-center gap-1 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-white/10 cursor-pointer"
                 >
                   <X className="h-3.5 w-3.5" /> Batal
                 </button>
@@ -150,7 +144,7 @@ export default function BudgetTracker({ totalExpense = 0 }) {
 
             <div className="relative">
               <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-400">
-                Rp
+                {getCurrencySymbol(currency)}
               </span>
               <input
                 type="text"
@@ -172,11 +166,15 @@ export default function BudgetTracker({ totalExpense = 0 }) {
             </span>
             {isOverBudget ? (
               <span className="rounded-full bg-rose-500/15 border border-rose-500/20 px-2.5 py-0.5 text-[11px] font-semibold text-rose-300">
-                Over Budget
+                Melewati Batas
+              </span>
+            ) : percentage >= 70 ? (
+              <span className="rounded-full bg-amber-500/15 border border-amber-500/20 px-2.5 py-0.5 text-[11px] font-semibold text-amber-300">
+                Perlu Hemat
               </span>
             ) : (
               <span className="rounded-full bg-emerald-500/15 border border-emerald-500/20 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-300">
-                Aman
+                Masih Aman
               </span>
             )}
           </div>
@@ -201,7 +199,7 @@ export default function BudgetTracker({ totalExpense = 0 }) {
             <Lightbulb className="h-4 w-4" />
           </div>
           <p className="min-w-0 flex-1 text-slate-300 italic leading-relaxed line-clamp-2 sm:line-clamp-none">
-            "{tips[tipIndex]}"
+            &ldquo;{tips[tipIndex]}&rdquo;
           </p>
         </div>
       </div>

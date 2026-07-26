@@ -6,10 +6,9 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Target,
+  Settings,
   LogOut,
   ChevronRight,
-  Receipt,
-  PieChart,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -17,7 +16,7 @@ export default function Sidebar({ user, onLogout }) {
   const pathname = usePathname();
   const [showMobileNav, setShowMobileNav] = useState(true);
 
-  // Daftar Menu Utama
+  // Daftar Menu Utama (Transaksi & Laporan dihapus, Pengaturan ditambahkan)
   const menus = [
     {
       name: "Dashboard",
@@ -30,14 +29,9 @@ export default function Sidebar({ user, onLogout }) {
       icon: Target,
     },
     {
-      name: "Transaksi",
-      href: "/transaksi",
-      icon: Receipt,
-    },
-    {
-      name: "Laporan",
-      href: "/laporan",
-      icon: PieChart,
+      name: "Pengaturan",
+      href: "/settings",
+      icon: Settings,
     },
   ];
 
@@ -92,7 +86,7 @@ export default function Sidebar({ user, onLogout }) {
             {/* CONTAINER LOGO */}
             <div className="relative w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-500/20 to-blue-600/20 border border-cyan-500/30 flex items-center justify-center p-1.5 shadow-[0_0_20px_rgba(6,182,212,0.3)]">
               <Image
-                src="/logo-aruskas.png" // Path gambar logo kamu (simpan file di folder /public)
+                src="/logo-aruskas.png"
                 alt="Logo ArusKas"
                 width={32}
                 height={32}
