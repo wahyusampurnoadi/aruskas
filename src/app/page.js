@@ -1,294 +1,249 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import { Wallet, TrendingUp, ShieldCheck, ArrowRight } from "lucide-react";
-import { Instagram } from "lucide-react";
+import { motion, useMotionValue, useTransform, useSpring } from "framer-motion";
+import { Wallet, TrendingUp, ShieldCheck, ArrowRight, Instagram, Sparkles, ChevronRight } from "lucide-react";
+
+// Komponen Card dengan Efek 3D Tilt Interaktif
+function FeatureCard3D({ icon, title, description, color, badge }) {
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+
+  const mouseXSpring = useSpring(x);
+  const mouseYSpring = useSpring(y);
+
+  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["17.5deg", "-17.5deg"]);
+  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-17.5deg", "17.5deg"]);
+
+  const handleMouseMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const xPct = mouseX / width - 0.5;
+    const yPct = mouseY / height - 0.5;
+
+    x.set(xPct);
+    y.set(yPct);
+  };
+
+  const handleMouseLeave = () => {
+    x.set(0);
+    y.set(0);
+  };
+
+  return (
+    <motion.div
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      style={{
+        rotateY,
+        rotateX,
+        transformStyle: "preserve-3d",
+      }}
+      className="relative group rounded-3xl border border-white/10 bg-slate-900/40 p-8 backdrop-blur-xl transition-all duration-200 hover:border-white/20 shadow-2xl hover:shadow-[0_20px_50px_rgba(59,130,246,0.15)]"
+    >
+      {/* Glow effect di bawah kartu */}
+      <div
+        className={`absolute inset-0 -z-10 rounded-3xl bg-gradient-to-br ${color} opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-20`}
+      />
+
+      <div style={{ transform: "translateZ(40px)" }} className="flex flex-col items-start text-left">
+        <div className="flex items-center justify-between w-full mb-6">
+          <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 text-cyan-400 group-hover:bg-cyan-500/10 group-hover:border-cyan-500/30 transition-all duration-300">
+            {icon}
+          </div>
+          <span className="text-[10px] font-bold tracking-widest text-slate-400 uppercase bg-white/5 px-2.5 py-1 rounded-full border border-white/5">
+            {badge}
+          </span>
+        </div>
+
+        <h3 className="text-xl font-bold text-white mb-2 tracking-tight">
+          {title}
+        </h3>
+        
+        <p className="text-sm text-slate-400 leading-relaxed font-normal">
+          {description}
+        </p>
+      </div>
+    </motion.div>
+  );
+}
 
 export default function Home() {
   const router = useRouter();
 
   return (
-    <div className="relative min-h-screen flex flex-col bg-[#030712] overflow-hidden selection:bg-blue-500/30">
-      <div className="relative z-50 mx-auto mt-4 w-[95%] overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-[0_8px_32px_rgba(59,130,246,0.15)]">
-        {/* Glow */}
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-cyan-400/10 to-indigo-500/5" />
-
-        <div className="relative py-3">
-          <div className="flex whitespace-nowrap animate-[marquee_25s_linear_infinite] text-sm font-medium text-slate-200">
-            <span className="mx-10 flex items-center gap-2">
-              ✨
-              <span>
-                Website dibuat oleh
-                <a
-                  href="https://instagram.com/wahyu_smprna"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mx-1 inline-flex items-center gap-1 font-semibold text-cyan-300 transition-all duration-300 hover:scale-105 hover:text-cyan-200 hover:drop-shadow-[0_0_12px_rgba(34,211,238,0.8)]"
-                >
-                  <Instagram className="h-4 w-4" />
-                  @wahyu_smprna
-                </a>
-                • Bantu support, cek link di bio ❤️
+    <div className="relative min-h-screen flex flex-col bg-[#030712] text-slate-100 overflow-hidden selection:bg-cyan-500/30 font-sans">
+      
+      {/* 1. TOP MARQUEE BANNER */}
+      <div className="relative z-50 mx-auto mt-4 w-[92%] max-w-7xl overflow-hidden rounded-full border border-white/10 bg-slate-900/60 backdrop-blur-xl shadow-lg">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-cyan-400/10 to-indigo-500/10 pointer-events-none" />
+        <div className="relative py-2.5">
+          <div className="flex whitespace-nowrap animate-[marquee_25s_linear_infinite] text-xs font-medium text-slate-300">
+            {[...Array(4)].map((_, i) => (
+              <span key={i} className="mx-8 flex items-center gap-2">
+                <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
+                <span>
+                  Project Developed by
+                  <a
+                    href="https://instagram.com/wahyu_smprna"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mx-1.5 inline-flex items-center gap-1 font-semibold text-cyan-300 transition-all hover:text-white hover:underline"
+                  >
+                    <Instagram className="h-3.5 w-3.5" />
+                    @wahyu_smprna
+                  </a>
+                  • Support project ini di IG ❤️
+                </span>
               </span>
-            </span>
-
-            <span className="mx-10 flex items-center gap-2">
-              ✨
-              <span>
-                Website dibuat oleh
-                <a
-                  href="https://instagram.com/wahyu_smprna"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mx-1 inline-flex items-center gap-1 font-semibold text-cyan-300 transition-all duration-300 hover:scale-105 hover:text-cyan-200 hover:drop-shadow-[0_0_12px_rgba(34,211,238,0.8)]"
-                >
-                  <Instagram className="h-4 w-4" />
-                  @wahyu_smprna
-                </a>
-                • Bantu support, cek link di bio ❤️
-              </span>
-            </span>
-
-            <span className="mx-10 flex items-center gap-2">
-              ✨
-              <span>
-                Website dibuat oleh
-                <a
-                  href="https://instagram.com/wahyu_smprna"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mx-1 inline-flex items-center gap-1 font-semibold text-cyan-300 transition-all duration-300 hover:scale-105 hover:text-cyan-200 hover:drop-shadow-[0_0_12px_rgba(34,211,238,0.8)]"
-                >
-                  <Instagram className="h-4 w-4" />
-                  @wahyu_smprna
-                </a>
-                • Bantu support, cek link di bio ❤️
-              </span>
-            </span>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* 1. ADVANCED ANIMATED BACKGROUND */}
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        {/* Grid Dasar */}
-        <div
-          className="absolute inset-0 opacity-[0.15]"
+      {/* 2. ADVANCED 3D GRID & LIGHTING BACKGROUND */}
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+        {/* Perspective Grid Line Floor */}
+        <div 
+          className="absolute inset-0 opacity-[0.12]"
           style={{
-            backgroundImage:
-              "linear-gradient(#1e293b 1px, transparent 1px), linear-gradient(90deg, #1e293b 1px, transparent 1px)",
-            backgroundSize: "40px 40px",
+            backgroundImage: `linear-gradient(to right, #38bdf8 1px, transparent 1px), linear-gradient(to bottom, #38bdf8 1px, transparent 1px)`,
+            backgroundSize: "60px 60px",
+            maskImage: "radial-gradient(ellipse at center, black 30%, transparent 80%)"
           }}
         />
 
-        {/* Garis Laser Horizontal Berjalan */}
-        <div className="absolute inset-0">
-          <div className="absolute top-1/4 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-blue-500 to-transparent animate-scan-slow opacity-20" />
-          <div className="absolute top-3/4 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-purple-500 to-transparent animate-scan-fast opacity-20" />
-        </div>
-
-        {/* Garis Laser Vertikal Berjalan */}
-        <div className="absolute inset-0 flex justify-around">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="relative w-[1px] h-full bg-white/5">
-              <div
-                className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-transparent via-blue-400 to-transparent animate-fall shadow-[0_0_15px_rgba(59,130,246,0.5)]"
-                style={{ animationDelay: `${i * 1.5}s` }}
-              />
-            </div>
-          ))}
-        </div>
-
-        {/* Cahaya Latar Belakang */}
-        <div className="absolute -top-40 -left-40 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[100px]" />
+        {/* Ambient Glow Orbs */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-cyan-600/15 rounded-full blur-[140px]" />
+        <div className="absolute top-1/3 left-1/4 w-[400px] h-[400px] bg-blue-600/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[150px]" />
       </div>
 
-      <main className="relative z-10 text-center px-6 max-w-4xl mx-auto flex-grow flex flex-col items-center pt-28 pb-12">
-        {/* Badge Intro */}
+      {/* 3. HERO SECTION */}
+      <main className="relative z-10 text-center px-6 max-w-5xl mx-auto flex-grow flex flex-col items-center pt-16 pb-16">
+        
+        {/* Intro Badge */}
         <motion.div
-          initial={{ opacity: 0, y: -10 }}
+          initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8 px-4 py-1 rounded-full border border-blue-500/30 bg-blue-500/5 text-blue-400 text-[10px] font-bold tracking-[0.3em] uppercase"
+          transition={{ duration: 0.5 }}
+          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 text-xs font-semibold tracking-wider uppercase mb-6 shadow-[0_0_20px_rgba(34,211,238,0.2)]"
         >
-          TOP SYSTEM FINANCIAL
+          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+          Finansial Management System v2.0
         </motion.div>
 
-        {/* Hero Title */}
+        {/* Main Brand Title: ArusKas */}
         <motion.h1
-          initial={{ opacity: 0, scale: 0.95 }}
+          initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="text-6xl md:text-8xl font-black text-white tracking-tighter"
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="text-6xl sm:text-8xl md:text-9xl font-black tracking-tight text-white mb-2"
         >
           Arus
-          <span className="relative inline-block text-blue-500">
+          <span className="bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-400 bg-clip-text text-transparent">
             Kas
-            <span className="absolute -bottom-2 left-0 w-full h-1 bg-blue-500 animate-pulse" />
           </span>
         </motion.h1>
 
-        <motion.p className="mt-8 text-gray-400 max-w-md text-sm md:text-base leading-relaxed tracking-widest opacity-80">
-          Platform pencatatan finansial dan aset untukmu
-          <br />
-          <span className="text-white">AMAN • REALTIME • ELEGAN</span>
+        {/* Tagline / Sub-heading */}
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-slate-200 max-w-3xl leading-snug"
+        >
+          Kelola Finansial Tanpa Rasa Ragu
+        </motion.h2>
+
+        {/* Description */}
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="mt-4 text-slate-400 max-w-2xl text-base sm:text-lg leading-relaxed font-normal"
+        >
+          Platform pencatatan arus kas, alokasi tabungan, dan manajemen aset secara <span className="text-slate-200 font-medium">realtime</span>, <span className="text-slate-200 font-medium">aman</span>, dan <span className="text-slate-200 font-medium">terstruktur</span>.
         </motion.p>
 
-        {/* 3. Buttons with Moving Border Effect */}
-        <div className="mt-12 flex flex-col sm:flex-row gap-6 items-center justify-center w-full">
-          <div className="group relative p-[2px] rounded-2xl overflow-hidden bg-white/10">
-            {/* Lampu border berputar */}
-            <div
-              className="absolute inset-0 bg-gradient-to-r from-blue-500 via-transparent to-cyan-400 animate-spin-slow group-hover:animate-spin-fast"
-              style={{ margin: "-100%" }}
-            />
-            <button
-              onClick={() => router.push("/login")}
-              className="relative px-12 py-4 rounded-2xl bg-[#030712] text-white font-bold flex items-center gap-2 hover:bg-transparent transition-all cursor-pointer"
-            >
-              MULAI SEKARANG <ArrowRight size={18} />
-            </button>
-          </div>
+        {/* Action Buttons */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="mt-10 flex flex-col sm:flex-row gap-4 items-center justify-center w-full max-w-md"
+        >
+          <button
+            onClick={() => router.push("/login")}
+            className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-semibold flex items-center justify-center gap-2 hover:from-cyan-400 hover:to-blue-500 transition-all duration-300 shadow-[0_0_30px_rgba(6,182,212,0.4)] hover:scale-[1.02] cursor-pointer"
+          >
+            Mulai Sekarang <ArrowRight className="w-5 h-5" />
+          </button>
 
           <button
             onClick={() => router.push("/register")}
-            className="px-12 py-4 rounded-2xl border border-gray-800 text-gray-400 font-bold hover:text-white hover:border-white transition-all tracking-widest text-sm cursor-pointer"
+            className="w-full sm:w-auto px-8 py-4 rounded-2xl border border-white/10 bg-white/5 text-slate-300 font-semibold hover:bg-white/10 hover:text-white hover:border-white/20 transition-all duration-300 backdrop-blur-xl flex items-center justify-center gap-2 cursor-pointer"
           >
-            DAFTAR GRATIS
+            Daftar Gratis <ChevronRight className="w-4 h-4 text-slate-400" />
           </button>
-        </div>
+        </motion.div>
 
-        {/* 4. Feature Cards with Infinite Glow Trace */}
-        <div className="mt-20 grid grid-cols-1 sm:grid-cols-3 gap-6 w-full">
-          {[
-            {
-              icon: <Wallet size={24} />,
-              title: "Dompet",
-              color: "from-blue-500",
-            },
-            {
-              icon: <TrendingUp size={24} />,
-              title: "Berkembang",
-              color: "from-emerald-500",
-            },
-            {
-              icon: <ShieldCheck size={24} />,
-              title: "Aman",
-              color: "from-purple-500",
-            },
-          ].map((item, i) => (
-            <div
-              key={i}
-              className="relative group p-[1px] rounded-2xl overflow-hidden"
-            >
-              {/* Garis lampu berjalan di pinggir kartu */}
-              <div
-                className={`absolute inset-0 bg-gradient-to-r ${item.color} to-transparent animate-shimmer`}
-                style={{ width: "200%" }}
-              />
-
-              <div className="relative p-8 rounded-2xl bg-[#030712]/90 backdrop-blur-xl flex flex-col items-center">
-                <div className="mb-4 text-blue-400 group-hover:scale-110 transition-transform duration-500">
-                  {item.icon}
-                </div>
-                <h3 className="text-white text-xs font-black tracking-[0.2em] uppercase">
-                  {item.title}
-                </h3>
-              </div>
-            </div>
-          ))}
-        </div>
+        {/* 4. 3D INTERACTIVE CARDS GRID */}
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.5 }}
+          className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-6 w-full perspective-1000"
+        >
+          <FeatureCard3D
+            icon={<Wallet className="w-6 h-6" />}
+            title="Arus Kas Realtime"
+            description="Pantau seluruh pengeluaran dan pemasukan harian dengan grafik interaktif dan instan."
+            color="from-cyan-500 to-blue-500"
+            badge="Catatan Harian"
+          />
+          <FeatureCard3D
+            icon={<TrendingUp className="w-6 h-6" />}
+            title="Target Tabungan"
+            description="Rencanakan target wishlist & impian finansialmu dengan estimasi waktu otomatis."
+            color="from-emerald-500 to-teal-500"
+            badge="Wishlist Goal"
+          />
+          <FeatureCard3D
+            icon={<ShieldCheck className="w-6 h-6" />}
+            title="Keamanan Terjamin"
+            description="Penyimpanan data keuangan berbasis enkripsi tinggi yang aman dan privat."
+            color="from-indigo-500 to-purple-500"
+            badge="Enkripsi Data"
+          />
+        </motion.div>
       </main>
 
-      {/* 5. Minimal Footer */}
-      <footer className="relative z-10 w-full py-6 border-t border-white/5">
-        <div className="max-w-4xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-2 opacity-40">
-          <p className="text-white text-[9px] tracking-[0.4em] uppercase">
-            Update v2.0
-          </p>
-          <p className="text-white text-[9px] tracking-[0.2em] uppercase">
-            © 2025 Wahyu Sampurno Adi
-          </p>
+      {/* 5. MINIMAL FOOTER */}
+      <footer className="relative z-10 w-full py-8 border-t border-white/5 bg-slate-950/40 backdrop-blur-md">
+        <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-slate-500">
+          <p className="font-mono tracking-widest uppercase">ArusKas App • v2.0</p>
+          <p>© 2026 Wahyu Sampurno Adi. All rights reserved.</p>
         </div>
       </footer>
 
-      {/* KEYFRAMES ANIMATION */}
+      {/* KEYFRAMES & UTILITIES */}
       <style jsx global>{`
-        @keyframes scan-slow {
+        .perspective-1000 {
+          perspective: 1000px;
+        }
+        @keyframes marquee {
           0% {
-            transform: translateY(-100px);
-            opacity: 0;
-          }
-          50% {
-            opacity: 0.2;
+            transform: translateX(0%);
           }
           100% {
-            transform: translateY(100vh);
-            opacity: 0;
+            transform: translateX(-50%);
           }
-        }
-        @keyframes scan-fast {
-          0% {
-            transform: translateY(100vh);
-            opacity: 0;
-          }
-          50% {
-            opacity: 0.2;
-          }
-          100% {
-            transform: translateY(-100px);
-            opacity: 0;
-          }
-        }
-        @keyframes fall {
-          0% {
-            transform: translateY(-20%);
-            opacity: 0;
-          }
-          10% {
-            opacity: 1;
-          }
-          90% {
-            opacity: 1;
-          }
-          100% {
-            transform: translateY(1000%);
-            opacity: 0;
-          }
-        }
-        @keyframes shimmer {
-          0% {
-            transform: translateX(-100%);
-          }
-          100% {
-            transform: translateX(100%);
-          }
-        }
-        @keyframes spin-slow {
-          from {
-            transform: rotate(0deg);
-          }
-          to {
-            transform: rotate(360deg);
-          }
-        }
-        .animate-scan-slow {
-          animation: scan-slow 12s linear infinite;
-        }
-        .animate-scan-fast {
-          animation: scan-fast 8s linear infinite;
-        }
-        .animate-fall {
-          animation: fall 4s linear infinite;
-        }
-        .animate-shimmer {
-          animation: shimmer 3s linear infinite;
-        }
-        .animate-spin-slow {
-          animation: spin-slow 6s linear infinite;
-        }
-        .animate-spin-fast {
-          animation: spin-slow 2s linear infinite;
         }
       `}</style>
     </div>
