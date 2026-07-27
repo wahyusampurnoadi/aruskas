@@ -55,11 +55,12 @@ export default function BudgetTracker({ totalExpense = 0, currency = "IDR" }) {
   const isOverBudget = totalExpense > budget;
 
   const tips = [
-    "Simpan minimal 20% pendapatanmu untuk tabungan.",
-    "Dana darurat idealnya 3–6 kali pengeluaran bulanan.",
-    "Catat setiap pengeluaran kecil agar tidak bocor.",
-    "Hindari membeli barang hanya karena diskon.",
-    "Prioritaskan kebutuhan dibanding keinginan.",
+    "\"Jangan menabung apa yang tersisa setelah dibelanjakan, tapi belanjakan apa yang tersisa setelah ditabung.\" — Warren Buffett",
+    "\"Bukan berapa banyak uang yang kamu hasilkan, tapi berapa banyak uang yang kamu simpan.\" — Robert Kiyosaki",
+    "\"Seseorang bisa duduk di bawah pohon yang rindang hari ini karena ada yang menanamnya jauh hari sebelumnya.\" — Warren Buffett",
+    "\"Kekayaan tidak terdiri dari memiliki banyak barang, tetapi memiliki sedikit keinginan.\" — Epictetus",
+    "\"Aturan No. 1: Jangan pernah kehilangan uang. Aturan No. 2: Jangan pernah lupa aturan No. 1.\" — Warren Buffett",
+    "\"Beli barang yang kamu butuhkan, bukan yang kamu inginkan. Jika membeli hal tak perlu, kelak kamu harus menjual hal yang dibutuhkan.\" — Benjamin Franklin",
   ];
 
   const [tipIndex, setTipIndex] = useState(0);
@@ -67,7 +68,7 @@ export default function BudgetTracker({ totalExpense = 0, currency = "IDR" }) {
   useEffect(() => {
     const interval = setInterval(() => {
       setTipIndex((prev) => (prev + 1) % tips.length);
-    }, 4000);
+    }, 7000);
     return () => clearInterval(interval);
   }, [tips.length]);
 

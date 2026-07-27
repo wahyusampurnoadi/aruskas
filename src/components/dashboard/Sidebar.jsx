@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Target,
+  Wallet,
   Settings,
   LogOut,
   ChevronRight,
@@ -23,6 +24,11 @@ export default function Sidebar({ user, onLogout }) {
       name: "Dashboard",
       href: "/dashboard",
       icon: LayoutDashboard,
+    },
+    {
+      name: "Dompet", 
+      href: "/wallets",
+      icon: Wallet,
     },
     {
       name: "Wishlist",
