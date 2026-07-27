@@ -1,8 +1,8 @@
 "use client";
 
-import { Download, Trash2 } from "lucide-react";
+import { Download, Trash2, Loader2 } from "lucide-react";
 
-export default function DataTab({ onExport, onReset }) {
+export default function DataTab({ onExport, onReset, isExporting }) {
   return (
     <div className="space-y-8">
       <div>
@@ -15,10 +15,15 @@ export default function DataTab({ onExport, onReset }) {
 
         <button
           onClick={onExport}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 font-bold text-xs text-white transition cursor-pointer"
+          disabled={isExporting}
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 font-bold text-xs text-white transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <Download className="w-4 h-4" />
-          <span>Ekspor Semua Data (Excel)</span>
+          {isExporting ? (
+            <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
+          ) : (
+            <Download className="w-4 h-4" />
+          )}
+          <span>{isExporting ? "Mengekspor..." : "Ekspor Semua Data (Excel)"}</span>
         </button>
       </div>
 

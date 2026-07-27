@@ -73,7 +73,15 @@ export default function DashboardPage() {
   // =========================
   // Local state form & UI
   // =========================
-  const [showBalance, setShowBalance] = useState(true);
+  
+  // 1. Inisialisasi showBalance berdasarkan localStorage (Kebalikan dari hideBalanceByDefault)
+  const [showBalance, setShowBalance] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("hideBalanceByDefault") !== "true";
+    }
+    return true;
+  });
+
   const [showTransactionModal, setShowTransactionModal] = useState(false);
 
   const [editingId, setEditingId] = useState(null);
@@ -121,17 +129,39 @@ export default function DashboardPage() {
     return `${monthNames[month]} ${year}`;
   }, [filterMode, startDate, endDate, month, year]);
 
-  // Sinkronisasi mata uang aktif dari localStorage & event listener global
+  // 2. Event Listener untuk perubahan Pengaturan Privasi Saldo & Mata Uang secara Realtime
   useEffect(() => {
     const updateCurrency = () => {
       const saved = localStorage.getItem("app_currency") || "IDR";
       setCurrency(saved);
     };
 
+    const updateBalanceVisibility = () => {
+      const isHidden = localStorage.getItem("hideBalanceByDefault") === "true";
+      setShowBalance(!isHidden);
+    };
+
     updateCurrency();
+    updateBalanceVisibility();
+
     window.addEventListener("currencyChange", updateCurrency);
-    return () => window.removeEventListener("currencyChange", updateCurrency);
+    window.addEventListener("storage_hide_balance", updateBalanceVisibility);
+    window.addEventListener("storage", updateBalanceVisibility);
+
+    return () => {
+      window.removeEventListener("currencyChange", updateCurrency);
+      window.removeEventListener("storage_hide_balance", updateBalanceVisibility);
+      window.removeEventListener("storage", updateBalanceVisibility);
+    };
   }, []);
+
+  // Handler toggle mata di komponen TotalBalanceCard yang tersinkronisasi ke localStorage
+  const handleToggleBalance = () => {
+    const nextShowBalance = !showBalance;
+    setShowBalance(nextShowBalance);
+    localStorage.setItem("hideBalanceByDefault", String(!nextShowBalance));
+    window.dispatchEvent(new Event("storage_hide_balance"));
+  };
 
   useEffect(() => {
     if (!loading && !user) {
@@ -340,7 +370,7 @@ export default function DashboardPage() {
             totalIncome={totalIncome}
             totalExpense={totalExpense}
             showBalance={showBalance}
-            toggleBalance={() => setShowBalance(!showBalance)}
+            toggleBalance={handleToggleBalance}
             currency={currency}
           />
           <div className="mt-4 sm:mt-0 sm:absolute sm:top-6 sm:right-6">
@@ -406,7 +436,7 @@ export default function DashboardPage() {
                     Pemasukan Aktif
                   </p>
                   <p className="text-lg font-extrabold text-emerald-300 mt-0.5">
-                    {formatCurrency(income, currency)}
+                    {showBalance ? formatCurrency(income, currency) : "••••••••"}
                   </p>
                 </div>
               </div>
@@ -420,7 +450,7 @@ export default function DashboardPage() {
                     Pengeluaran Aktif
                   </p>
                   <p className="text-lg font-extrabold text-rose-300 mt-0.5">
-                    {formatCurrency(expense, currency)}
+                    {showBalance ? formatCurrency(expense, currency) : "••••••••"}
                   </p>
                 </div>
               </div>

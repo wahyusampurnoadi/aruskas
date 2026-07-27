@@ -11,12 +11,13 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import Swal from "sweetalert2";
 
 export default function Sidebar({ user, onLogout }) {
   const pathname = usePathname();
   const [showMobileNav, setShowMobileNav] = useState(true);
 
-  // Daftar Menu Utama (Transaksi & Laporan dihapus, Pengaturan ditambahkan)
+  // Daftar Menu Utama
   const menus = [
     {
       name: "Dashboard",
@@ -34,6 +35,33 @@ export default function Sidebar({ user, onLogout }) {
       icon: Settings,
     },
   ];
+
+  // Handler Konfirmasi Logout dengan SweetAlert2
+  const handleConfirmLogout = () => {
+    Swal.fire({
+      title: "Keluar dari Akun?",
+      text: "Kamu harus masuk kembali untuk mengakses data keuanganmu.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Ya, Keluar",
+      cancelButtonText: "Batal",
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#334155",
+      background: "#0f172a",
+      color: "#ffffff",
+      customClass: {
+        popup: "rounded-3xl border border-white/10 backdrop-blur-xl shadow-2xl",
+        title: "text-white font-bold",
+        htmlContainer: "text-slate-300",
+        confirmButton: "rounded-xl font-bold px-5 py-2.5",
+        cancelButton: "rounded-xl font-bold px-5 py-2.5",
+      },
+    }).then((result) => {
+      if (result.isConfirmed) {
+        onLogout();
+      }
+    });
+  };
 
   // Efek Auto-hide Navigasi Mobile Saat Scroll
   useEffect(() => {
@@ -58,6 +86,50 @@ export default function Sidebar({ user, onLogout }) {
 
   return (
     <>
+      {/* ========================= */}
+      {/* MOBILE TOP HEADER PROFILE */}
+      {/* ========================= */}
+      <header className="lg:hidden sticky top-0 z-40 w-full bg-[#070d19]/80 backdrop-blur-2xl border-b border-white/10 px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-3 min-w-0">
+          {/* Avatar User */}
+          <div className="w-9 h-9 rounded-full overflow-hidden bg-gradient-to-tr from-cyan-500 to-blue-600 text-white font-bold flex items-center justify-center text-sm border border-white/20 shadow-inner shrink-0">
+            {user?.photoURL ? (
+              <img
+                src={user.photoURL}
+                alt={user.displayName || "User Avatar"}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              (
+                user?.displayName?.charAt(0) ||
+                user?.email?.charAt(0) ||
+                "U"
+              ).toUpperCase()
+            )}
+          </div>
+
+          {/* Nama & Email */}
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-bold text-white truncate leading-tight">
+              {user?.displayName || "Pengguna"}
+            </p>
+            <p className="text-[10px] text-slate-400 truncate mt-0.5">
+              {user?.email || "user@gmail.com"}
+            </p>
+          </div>
+        </div>
+
+        {/* Tombol Logout Mobile */}
+        <button
+          onClick={handleConfirmLogout}
+          title="Keluar Akun"
+          className="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer active:scale-95 shrink-0 ml-2"
+        >
+          <LogOut className="w-4 h-4" />
+          <span className="hidden sm:inline text-xs">Keluar</span>
+        </button>
+      </header>
+
       {/* ========================= */}
       {/* DESKTOP SIDEBAR */}
       {/* ========================= */}
@@ -154,17 +226,25 @@ export default function Sidebar({ user, onLogout }) {
           </nav>
         </div>
 
-        {/* PROFILE CARD & LOGOUT */}
+        {/* PROFILE CARD & LOGOUT DESKTOP */}
         <div className="pt-4 border-t border-white/10">
           <div className="p-3.5 rounded-2xl bg-slate-900/60 border border-white/5 backdrop-blur-md flex flex-col gap-3">
             <div className="flex items-center gap-3">
               {/* Avatar Circle */}
-              <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 text-white font-bold flex items-center justify-center text-base border border-white/20 shadow-inner">
-                {(
-                  user?.displayName?.charAt(0) ||
-                  user?.email?.charAt(0) ||
-                  "U"
-                ).toUpperCase()}
+              <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-tr from-cyan-500 to-blue-600 text-white font-bold flex items-center justify-center text-base border border-white/20 shadow-inner shrink-0">
+                {user?.photoURL ? (
+                  <img
+                    src={user.photoURL}
+                    alt={user.displayName || "User Avatar"}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  (
+                    user?.displayName?.charAt(0) ||
+                    user?.email?.charAt(0) ||
+                    "U"
+                  ).toUpperCase()
+                )}
               </div>
 
               {/* Detail Info User */}
@@ -180,7 +260,7 @@ export default function Sidebar({ user, onLogout }) {
 
             {/* Tombol Logout */}
             <button
-              onClick={onLogout}
+              onClick={handleConfirmLogout}
               className="w-full py-2.5 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-xs font-semibold flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer active:scale-95"
             >
               <LogOut className="w-4 h-4" />
