@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenAI, Type } from '@google/genai';
+import { db } from '@/lib/firebase'; // Sesuaikan path konfigurasi firebase Anda
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
@@ -13,11 +15,10 @@ interface TransactionData {
 
 export async function POST(req: Request) {
   try {
-    // Ubah dari req.formData() menjadi req.json() karena Fonnte mengirim JSON payload
     const body = await req.json();
     
-    const sender = body.sender || body.pengirim;   // Mendukung key 'sender' atau 'pengirim'
-    const message = body.message || body.pesan;     // Mendukung key 'message' atau 'pesan'
+    const sender = body.sender || body.pengirim;   // Nomor WA Pengirim
+    const message = body.message || body.pesan;     // Teks Pesan
     const isGroup = body.isGroup === true || body.isGroup === 'true';
 
     if (!message || isGroup) {
@@ -26,6 +27,7 @@ export async function POST(req: Request) {
 
     console.log(`[WA Incoming] From: ${sender} | Message: "${message}"`);
 
+    // 1. Parse Teks menggunakan Gemini AI
     const parsedData = await parseTransactionWithGemini(message);
 
     if (!parsedData || !parsedData.amount || parsedData.amount <= 0) {
@@ -36,6 +38,24 @@ export async function POST(req: Request) {
       return NextResponse.json({ status: 'unparsed' }, { status: 200 });
     }
 
+    // 2. Simpan Data Transaksi ke Firebase Firestore
+    try {
+      await addDoc(collection(db, 'transactions'), {
+        type: parsedData.type,
+        amount: parsedData.amount,
+        category: parsedData.category,
+        description: parsedData.description,
+        paymentMethod: parsedData.payment_method,
+        senderPhone: sender,
+        source: 'whatsapp',
+        createdAt: serverTimestamp(),
+      });
+      console.log('✅ Data berhasil disimpan ke Firestore!');
+    } catch (dbError) {
+      console.error('❌ Gagal menyimpan ke Firestore:', dbError);
+    }
+
+    // 3. Kirim Balasan ke WhatsApp User
     const replyText = 
       `✅ *Transaksi Berhasil Dicatat!*\n` +
       `━━━━━━━━━━━━━━━━━━\n` +
@@ -44,7 +64,8 @@ export async function POST(req: Request) {
       `• *Kategori:* ${parsedData.category}\n` +
       `• *Keterangan:* ${parsedData.description}\n` +
       `• *Metode:* ${parsedData.payment_method}\n` +
-      `━━━━━━━━━━━━━━━━━━`;
+      `━━━━━━━━━━━━━━━━━━\n` +
+      `_Catatan berhasil disimpan ke ArusKas._`;
 
     await sendFonnteReply(sender, replyText);
 
