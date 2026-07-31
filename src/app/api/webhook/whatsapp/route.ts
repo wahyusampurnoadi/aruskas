@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenAI, Type } from '@google/genai';
+// @ts-ignore
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
