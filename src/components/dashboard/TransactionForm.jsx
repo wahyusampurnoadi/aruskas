@@ -1,4 +1,6 @@
-import Toggle from "@/components/dashboard/Toggle";
+"use client";
+
+import { Upload, X, Eye } from "lucide-react";
 
 export default function TransactionForm({
   formRef,
@@ -20,253 +22,215 @@ export default function TransactionForm({
   imagePreview,
   setImagePreview,
   uploading,
-
-  // NEW PROPS
   goals = [],
-  selectedGoalId = "",
-  setSelectedGoalId = () => { },
+  selectedGoalId,
+  setSelectedGoalId,
+  onPreviewClick, // Prop baru untuk mentrigger modal pratinjau
 }) {
-  const incomeCategories = [
-    "Gaji",
-    "Bonus",
-    "Freelance",
-    "Penjualan",
-    "Investasi",
-    "Lainnya",
-  ];
-
-  const expenseCategories = [
-    "Makan & Minum",
-    "Transport",
-    "Belanja",
-    "Tagihan",
-    "Hiburan",
-    "Kesehatan",
-    "Pendidikan",
-    "Wishlist",
-    "Lainnya",
-  ];
-
-  const handleTypeChange = (nextType) => {
-    setType(nextType);
-
-    // reset kategori & target wishlist saat ganti tipe
-    setCategory("");
-    setSelectedGoalId("");
-  };
-
   return (
-    <form
-      ref={formRef}
-      onSubmit={submit}
-      className={`transition-all duration-500 ${editingId
-        ? "ring-2 ring-blue-500 bg-blue-500/5"
-        : "bg-white/5"
-        } p-6 rounded-2xl space-y-4 flex flex-col`}
-    >
-      <h2 className="font-semibold text-lg">
-        {editingId ? "Edit" : "Tambah"} Transaksi
-      </h2>
-
-      {/* TOGGLE TYPE */}
-      <div className="flex gap-2">
-        <Toggle
-          active={type === "income"}
-          onClick={() => handleTypeChange("income")}
-          label="Pemasukan"
-        />
-
-        <Toggle
-          active={type === "expense"}
-          onClick={() => handleTypeChange("expense")}
-          label="Pengeluaran"
-        />
-      </div>
-
-      {/* TANGGAL */}
-      <input
-        type="date"
-        value={transactionDate}
-        onChange={(e) => setTransactionDate(e.target.value)}
-        className="
-          w-full p-3 rounded-xl bg-black/40 border border-white/10
-          text-white cursor-pointer outline-none
-          focus:ring-2 focus:ring-blue-500/50
-          scheme-dark
-        "
-      />
-
-      {/* JUMLAH */}
-      <input
-        type="text"
-        placeholder="Jumlah (Rp)"
-        value={amount}
-        onChange={handleAmountChange}
-        className="w-full p-3 rounded-xl bg-black/40 border border-white/10
-        text-white outline-none
-        focus:ring-2 focus:ring-blue-500/50
-        scheme-dark"
-      />
-
-      {/* KATEGORI */}
-      <div className="space-y-2">
-        <label className="text-sm text-gray-300">
-          Kategori
-        </label>
-
-        <select
-          value={category}
-          onChange={(e) => {
-            setCategory(e.target.value);
-
-            // kalau bukan wishlist, reset target wishlist
-            if (e.target.value !== "Wishlist") {
-              setSelectedGoalId("");
-            }
+    <form ref={formRef} onSubmit={submit} className="space-y-4">
+      {/* Switcher Pemasukan / Pengeluaran */}
+      <div className="grid grid-cols-2 gap-2 p-1 bg-slate-950/60 rounded-xl border border-white/10">
+        <button
+          type="button"
+          onClick={() => {
+            setType("income");
+            setCategory("");
           }}
-          className="w-full p-3 rounded-xl bg-black/40 border border-white/10 text-white outline-none focus:ring-2 focus:ring-blue-500/50"
+          className={`py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+            type === "income"
+              ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-md"
+              : "text-slate-400 hover:text-white"
+          }`}
         >
-          <option value="" className="bg-slate-900">
-            Pilih kategori
-          </option>
-
-          {(type === "income"
-            ? incomeCategories
-            : expenseCategories
-          ).map((item) => (
-            <option
-              key={item}
-              value={item}
-              className="bg-slate-900"
-            >
-              {item}
-            </option>
-          ))}
-        </select>
+          Pemasukan
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setType("expense");
+            setCategory("");
+          }}
+          className={`py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+            type === "expense"
+              ? "bg-rose-500/20 text-rose-400 border border-rose-500/30 shadow-md"
+              : "text-slate-400 hover:text-white"
+          }`}
+        >
+          Pengeluaran
+        </button>
       </div>
 
-      {/* PILIH TARGET WISHLIST - MUNCUL HANYA SAAT EXPENSE + WISHLIST */}
-      {type === "expense" && category === "Wishlist" && (
-        <div className="space-y-2">
-          <label className="text-sm text-cyan-300 font-medium">
-            Pilih Target Wishlist
-          </label>
-
-          <select
-            value={selectedGoalId}
-            onChange={(e) => setSelectedGoalId(e.target.value)}
-            className="w-full p-3 rounded-xl bg-black/40 border border-cyan-500/30 text-white outline-none focus:ring-2 focus:ring-cyan-500/50"
-          >
-            <option value="" className="bg-slate-900">
-              Pilih wishlist tujuan
-            </option>
-
-            {goals.map((goal) => (
-              <option
-                key={goal.id}
-                value={goal.id}
-                className="bg-slate-900"
-              >
-                {goal.name} — Rp{" "}
-                {Number(goal.current || 0).toLocaleString("id-ID")} / Rp{" "}
-                {Number(goal.target || 0).toLocaleString("id-ID")}
-              </option>
-            ))}
-          </select>
-
-          <p className="text-xs text-cyan-300/80">
-            Jika dipilih, nominal pengeluaran ini akan otomatis masuk ke progress wishlist.
-          </p>
-        </div>
-      )}
-
-      {/* CATATAN */}
-      <textarea
-        placeholder="Catatan"
-        value={note}
-        onChange={(e) => setNote(e.target.value)}
-        rows={3}
-        className="w-full p-3 rounded-xl bg-black/40 border border-white/10
-        text-white outline-none
-        focus:ring-2 focus:ring-blue-500/50
-        scheme-dark"
-      />
-
-      {/* UPLOAD BUKTI */}
-      <div className="space-y-2">
-        <label className="text-xs text-gray-400 ml-1">
-          Bukti Transaksi (Opsional)
-        </label>
-
-        <input
-          type="file"
-          accept="image/*"
-          onChange={handleFileUpload}
-          className="
-            w-full text-sm text-gray-400
-            file:mr-4 file:py-2 file:px-4
-            file:rounded-xl file:border-0
-            file:text-sm file:font-semibold
-            file:bg-blue-600/20 file:text-blue-400
-            hover:file:bg-blue-600/30
-            cursor-pointer bg-black/40 rounded-xl p-2
-          "
-        />
-
-        {imagePreview && (
-          <div className="mt-4">
-
-            <img
-              src={imagePreview}
-              alt="Preview"
-              className="w-full max-h-72 rounded-xl object-cover border border-white/10"
-            />
-
-            <button
-              type="button"
-              onClick={() => {
-                setImageFile(null);
-                setImagePreview("");
-              }}
-              className="mt-3 w-full rounded-xl bg-red-500/15 border border-red-500/20 py-2 text-red-400 hover:bg-red-500/25"
-            >
-              Hapus Foto
-            </button>
-
+      {/* Grid 2 Kolom Samping */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+        {/* Kolom Kiri: Input Nilai & Detail */}
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                Tanggal
+              </label>
+              <input
+                type="date"
+                value={transactionDate}
+                onChange={(e) => setTransactionDate(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-950/60 border border-white/10 rounded-xl text-white text-xs focus:outline-none focus:border-indigo-500 transition-colors"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                Nominal (Rp)
+              </label>
+              <input
+                type="text"
+                value={amount}
+                onChange={handleAmountChange}
+                placeholder="0"
+                className="w-full px-3 py-2 bg-slate-950/60 border border-white/10 rounded-xl text-white text-xs font-semibold focus:outline-none focus:border-indigo-500 transition-colors"
+                required
+              />
+            </div>
           </div>
-        )}
 
-        {imageFile && (
-          <p className="text-[10px] text-green-400 ml-1">
-            ✔ {imageFile.name} siap diunggah
-          </p>
-        )}
+          <div>
+            <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+              Kategori
+            </label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full px-3 py-2 bg-slate-950/60 border border-white/10 rounded-xl text-white text-xs focus:outline-none focus:border-indigo-500 transition-colors cursor-pointer"
+              required
+            >
+              <option value="" disabled className="bg-slate-900 text-slate-400">
+                -- Pilih Kategori --
+              </option>
+              {type === "income" ? (
+                <>
+                  <option value="Gaji" className="bg-slate-900 text-white">Gaji</option>
+                  <option value="Bonus" className="bg-slate-900 text-white">Bonus</option>
+                  <option value="Freelance" className="bg-slate-900 text-white">Freelance</option>
+                  <option value="Investasi" className="bg-slate-900 text-white">Investasi</option>
+                  <option value="Lainnya" className="bg-slate-900 text-white">Lainnya</option>
+                </>
+              ) : (
+                <>
+                  <option value="Makanan & Minuman" className="bg-slate-900 text-white">Makanan & Minuman</option>
+                  <option value="Transportasi" className="bg-slate-900 text-white">Transportasi</option>
+                  <option value="Belanja" className="bg-slate-900 text-white">Belanja</option>
+                  <option value="Tagihan & Utilitas" className="bg-slate-900 text-white">Tagihan & Utilitas</option>
+                  <option value="Hiburan" className="bg-slate-900 text-white">Hiburan</option>
+                  <option value="Kesehatan" className="bg-slate-900 text-white">Kesehatan</option>
+                  <option value="Pendidikan" className="bg-slate-900 text-white">Pendidikan</option>
+                  <option value="Wishlist" className="bg-slate-900 text-white">Target Wishlist</option>
+                  <option value="Lainnya" className="bg-slate-900 text-white">Lainnya</option>
+                </>
+              )}
+            </select>
+          </div>
+
+          {type === "expense" && category === "Wishlist" && (
+            <div>
+              <label className="block text-[11px] font-semibold text-amber-400 mb-1">
+                Target Wishlist
+              </label>
+              <select
+                value={selectedGoalId}
+                onChange={(e) => setSelectedGoalId(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-950/60 border border-amber-500/30 rounded-xl text-white text-xs focus:outline-none focus:border-amber-400 transition-colors cursor-pointer"
+                required
+              >
+                <option value="" disabled className="bg-slate-900 text-slate-400">
+                  -- Pilih Goal Wishlist --
+                </option>
+                {goals.map((goal) => (
+                  <option key={goal.id} value={goal.id} className="bg-slate-900 text-white">
+                    {goal.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+              Catatan / Keterangan
+            </label>
+            <textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Catatan transaksi..."
+              rows={2}
+              className="w-full px-3 py-2 bg-slate-950/60 border border-white/10 rounded-xl text-white text-xs focus:outline-none focus:border-indigo-500 transition-colors resize-none"
+            />
+          </div>
+        </div>
+
+        {/* Kolom Kanan: Upload & Preview Bukti */}
+        <div className="space-y-3 flex flex-col justify-between h-full">
+          <div>
+            <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+              Bukti Transaksi (Opsional)
+            </label>
+
+            {imagePreview ? (
+              <div className="relative group w-full h-[152px] rounded-xl overflow-hidden border border-white/10 bg-slate-950 flex items-center justify-center">
+                <img
+                  src={imagePreview}
+                  alt="Preview"
+                  className="max-h-full max-w-full object-contain p-2 cursor-pointer transition-transform duration-300 group-hover:scale-105"
+                  onClick={() => onPreviewClick && onPreviewClick(imagePreview)}
+                />
+                
+                {/* Overlay Hover Klik Pratinjau */}
+                <div 
+                  onClick={() => onPreviewClick && onPreviewClick(imagePreview)}
+                  className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer pointer-events-none group-hover:pointer-events-auto"
+                >
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900/80 border border-white/20 text-white text-xs backdrop-blur-sm">
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>Lihat Full</span>
+                  </div>
+                </div>
+
+                {/* Tombol Hapus Gambar */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setImageFile(null);
+                    setImagePreview("");
+                  }}
+                  className="absolute top-2 right-2 z-10 p-1.5 bg-red-600/80 hover:bg-red-600 text-white rounded-lg transition-colors cursor-pointer shadow-md"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <label className="flex flex-col items-center justify-center gap-2 w-full h-[152px] border border-dashed border-white/20 hover:border-indigo-500/50 rounded-xl bg-slate-950/40 hover:bg-slate-950/70 transition-all cursor-pointer text-slate-400 hover:text-white p-4 text-center">
+                <Upload className="w-5 h-5 text-indigo-400" />
+                <span className="text-xs font-medium">Unggah Struk / Bukti</span>
+                <span className="text-[10px] text-slate-500">Format PNG, JPG (Max 2MB)</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+              </label>
+            )}
+          </div>
+
+          <button
+            type="submit"
+            disabled={uploading}
+            className="w-full py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 font-bold text-xs text-white shadow-lg shadow-indigo-500/20 transition-all cursor-pointer disabled:opacity-50 active:scale-[0.99] mt-auto"
+          >
+            {uploading ? "Menyimpan..." : editingId ? "Perbarui Transaksi" : "Simpan Transaksi"}
+          </button>
+        </div>
       </div>
-
-      {/* SUBMIT */}
-      <button
-        type="submit"
-        disabled={uploading}
-        className="
-          mt-auto w-full p-3 rounded-xl
-          bg-blue-600 hover:bg-blue-700
-          font-semibold cursor-pointer
-          disabled:opacity-50
-          disabled:cursor-not-allowed
-          transition-all
-        "
-      >
-        {uploading ? (
-          <span className="flex items-center justify-center gap-2">
-            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-            Menyimpan...
-          </span>
-        ) : editingId ? (
-          "Update Transaksi"
-        ) : (
-          "Simpan Transaksi"
-        )}
-      </button>
     </form>
   );
 }
