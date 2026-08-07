@@ -91,7 +91,6 @@ export default function DashboardPage() {
   const [imagePreview, setImagePreview] = useState("");
   const [existingImageUrl, setExistingImageUrl] = useState("");
 
-  // State untuk Preview Fullscreen Gambar Struk
   const [previewImageModalUrl, setPreviewImageModalUrl] = useState(null);
 
   const [uploading, setUploading] = useState(false);
@@ -537,11 +536,9 @@ export default function DashboardPage() {
         {showTransactionModal && (
           <div className="fixed inset-0 z-[9999] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 lg:ml-64 transition-all duration-300">
             <div className="bg-slate-900 border border-white/15 rounded-3xl w-full max-w-2xl p-6 shadow-2xl shadow-indigo-500/10 relative overflow-hidden my-auto">
-              {/* Decorative Glow */}
               <div className="absolute -top-12 -left-12 w-32 h-32 bg-indigo-500/20 rounded-full blur-2xl pointer-events-none" />
               <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-blue-500/20 rounded-full blur-2xl pointer-events-none" />
 
-              {/* Modal Header */}
               <div className="relative flex justify-between items-center mb-4 pb-3 border-b border-white/10 shrink-0">
                 <div className="flex items-center gap-2.5">
                   <div className="p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
@@ -567,7 +564,6 @@ export default function DashboardPage() {
                 </button>
               </div>
 
-              {/* Modal Body Landscape */}
               <div className="relative">
                 <TransactionForm
                   formRef={formRef}
@@ -578,6 +574,7 @@ export default function DashboardPage() {
                   transactionDate={transactionDate}
                   setTransactionDate={setTransactionDate}
                   amount={amount}
+                  setAmount={setAmount}
                   handleAmountChange={handleAmountChange}
                   category={category}
                   setCategory={setCategory}

@@ -10,6 +10,8 @@ import {
   Settings,
   LogOut,
   ChevronRight,
+  HandCoins,
+  Repeat,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
@@ -22,21 +24,37 @@ export default function Sidebar({ user, onLogout }) {
   const menus = [
     {
       name: "Dashboard",
+      mobileName: "Beranda",
       href: "/dashboard",
       icon: LayoutDashboard,
     },
     {
-      name: "Dompet", 
+      name: "Dompet",
+      mobileName: "Dompet",
       href: "/wallets",
       icon: Wallet,
     },
     {
+      name: "Hutang Piutang",
+      mobileName: "Hutang",
+      href: "/debts",
+      icon: HandCoins,
+    },
+    {
+      name: "Langganan",
+      mobileName: "Rutin",
+      href: "/subscriptions",
+      icon: Repeat,
+    },
+    {
       name: "Wishlist",
+      mobileName: "Target",
       href: "/wishlist",
       icon: Target,
     },
     {
       name: "Pengaturan",
+      mobileName: "Setelan",
       href: "/settings",
       icon: Settings,
     },
@@ -280,17 +298,17 @@ export default function Sidebar({ user, onLogout }) {
       {/* MOBILE LIQUID GLASS NAV */}
       {/* ========================= */}
       <div
-        className={`lg:hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-[999] w-[90%] max-w-[360px] transition-all duration-500 ${
+        className={`lg:hidden fixed bottom-3 left-1/2 -translate-x-1/2 z-[999] w-[95%] max-w-[440px] transition-all duration-500 ${
           showMobileNav
             ? "opacity-100 translate-y-0"
             : "opacity-0 translate-y-20 pointer-events-none"
         }`}
       >
-        <div className="relative overflow-hidden bg-[#070d19]/80 backdrop-blur-3xl border border-white/10 rounded-[32px] px-3 py-2 shadow-[0_8px_40px_rgba(0,0,0,0.6)]">
+        <div className="relative overflow-hidden bg-[#070d19]/90 backdrop-blur-3xl border border-white/15 rounded-[26px] px-1.5 py-1.5 shadow-[0_10px_40px_rgba(0,0,0,0.7)]">
           {/* Ambient Glow Background */}
           <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-blue-500/10 to-indigo-500/10 blur-2xl pointer-events-none" />
 
-          <div className="relative flex items-center justify-around">
+          <div className="relative flex items-center justify-between gap-1">
             {menus.map((menu) => {
               const active = pathname === menu.href;
               const Icon = menu.icon;
@@ -300,27 +318,27 @@ export default function Sidebar({ user, onLogout }) {
                   key={menu.href}
                   href={menu.href}
                   className={`
-                    flex flex-col items-center justify-center
-                    gap-1 px-3 py-2 rounded-2xl
-                    transition-all duration-300
+                    flex-1 flex flex-col items-center justify-center
+                    py-1.5 px-0.5 rounded-2xl
+                    transition-all duration-300 select-none
                     ${
                       active
-                        ? "bg-white/10 backdrop-blur-xl border border-white/20 text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.25)]"
-                        : "text-slate-400 hover:text-slate-200"
+                        ? "bg-gradient-to-b from-cyan-500/20 to-blue-500/10 border border-cyan-500/40 text-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.2)]"
+                        : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
                     }
                   `}
                 >
                   <Icon
-                    className={`w-5 h-5 transition-transform ${
+                    className={`w-4 h-4 transition-transform ${
                       active ? "scale-110 text-cyan-400" : ""
                     }`}
                   />
                   <span
-                    className={`text-[10px] font-medium whitespace-nowrap ${
-                      active ? "text-white" : "text-slate-400"
+                    className={`text-[9px] sm:text-[10px] font-semibold tracking-tight whitespace-nowrap mt-1 ${
+                      active ? "text-white font-bold" : "text-slate-400"
                     }`}
                   >
-                    {menu.name}
+                    {menu.mobileName || menu.name}
                   </span>
                 </Link>
               );

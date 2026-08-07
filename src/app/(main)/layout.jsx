@@ -28,23 +28,23 @@ export default function MainLayout({ children }) {
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-black text-white">
 
+            {/* Sidebar Utama Dipanggil Hanya Di Sini */}
             <Sidebar
                 user={user}
                 onLogout={logout}
             />
 
-            <div className="relative lg:ml-[280px]">
+            <div className="relative lg:ml-[280px] min-h-screen">
 
-                <div className="fixed inset-0 z-0">
+                {/* Background Pattern */}
+                <div className="fixed inset-0 z-0 pointer-events-none">
                     <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px]" />
-
                     <div className="absolute left-1/2 -top-20 -translate-x-1/2 w-[600px] h-[300px] bg-blue-500/10 blur-[120px] rounded-full" />
                 </div>
 
-                <main className="min-h-screen relative z-10">
-                    <div className="p-6 lg:p-8">
-                        {children}
-                    </div>
+                {/* Container Halaman (children) */}
+                <main className="relative z-10 p-4 sm:p-6 lg:p-8 pb-28 lg:pb-8 w-full">
+                    {children}
                 </main>
 
             </div>
