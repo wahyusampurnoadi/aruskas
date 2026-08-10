@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image"; // Diimpor jika ingin menggunakan logo file gambar (e.g. /logo.png)
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { Eye, EyeOff, ArrowLeft } from "lucide-react"; 
+import { Eye, EyeOff, ArrowLeft, Sparkles, CheckCircle2, UserCheck, Zap, Lock } from "lucide-react"; 
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -39,103 +40,208 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#030712] px-4 relative overflow-hidden">
+    <div className="h-screen w-full grid grid-cols-1 lg:grid-cols-12 bg-[#030712] text-slate-100 font-sans overflow-hidden select-none">
       
-      {/* --- ELEMEN BACKGROUND (Sama dengan Login) --- */}
-      {/* Orb Biru di Kanan Atas */}
-      <div className="absolute top-[-15%] right-[-5%] w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-[120px] animate-pulse" />
-      {/* Orb Ungu di Kiri Bawah */}
-      <div className="absolute bottom-[-10%] left-[-5%] w-[400px] h-[400px] bg-purple-600/10 rounded-full blur-[100px]" />
-      {/* Texture Overlay */}
-      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none"></div>
-      {/* ------------------------------- */}
+      {/* ================= SISI KIRI: GRID SEMU & HERO CONTENT (7 COL) ================= */}
+      <div className="hidden lg:flex lg:col-span-7 relative p-8 xl:p-12 flex-col justify-between border-r border-white/5 bg-slate-950/90 overflow-hidden">
+        
+        {/* Pattern Grid Kotak-Kotak Semu */}
+        <div 
+          className="absolute inset-0 opacity-[0.07] pointer-events-none"
+          style={{
+            backgroundImage: `linear-gradient(to right, #38bdf8 1px, transparent 1px), linear-gradient(to bottom, #38bdf8 1px, transparent 1px)`,
+            backgroundSize: "64px 64px",
+            maskImage: "radial-gradient(ellipse at center, black 40%, transparent 85%)",
+            WebkitMaskImage: "radial-gradient(ellipse at center, black 40%, transparent 85%)"
+          }}
+        />
 
-      <button
-        onClick={() => router.push("/")}
-        className="absolute top-6 left-6 text-gray-400 hover:text-white flex items-center gap-2 transition z-10 group cursor-pointer"
-      >
-        <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
-        Kembali
-      </button>
+        {/* Ambient Glow Sisi Kiri */}
+        <div className="absolute top-1/4 -left-20 w-[450px] h-[450px] bg-cyan-500/5 rounded-full blur-[150px] pointer-events-none" />
+        <div className="absolute bottom-1/4 right-0 w-[500px] h-[500px] bg-blue-600/5 rounded-full blur-[160px] pointer-events-none" />
 
-      <div className="w-full max-w-md bg-white/[0.03] border border-white/10 rounded-2xl p-8 backdrop-blur-xl shadow-2xl z-10">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-extrabold tracking-tight text-white">
-            Daftar <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">ArusKas</span>
-          </h1>
-          <p className="text-gray-400 text-sm mt-2">
-            Mulai langkah bijak mengelola keuanganmu hari ini.
-          </p>
+        {/* Brand Header / Logo */}
+        <div className="relative z-10 flex items-center gap-3">
+          
+          <Image 
+            src="/logo-aruskas.png" 
+            alt="Logo ArusKas" 
+            width={36} 
+            height={36} 
+            className="w-9 h-9 object-contain"
+          /> 
+         
+
+          <span className="text-xl font-extrabold tracking-tight text-white">
+            Arus<span className="text-cyan-400">Kas</span>
+          </span>
         </div>
 
-        <div className="space-y-5">
-          <div>
-            <label className="text-xs font-medium text-gray-400 mb-1.5 block ml-1">Nama Lengkap</label>
-            <input
-              type="text"
-              placeholder="Masukkan nama Anda"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-white/[0.05] border border-white/10 text-white focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all placeholder:text-gray-600"
-            />
+        {/* Hero Content */}
+        <div className="relative z-10 my-auto max-w-lg space-y-5">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-cyan-500/20 bg-cyan-500/10 text-cyan-300 text-xs font-semibold">
+            <UserCheck size={14} className="text-cyan-400" />
+            <span>Bergabung Tanpa Biaya Tambahan</span>
           </div>
 
-          <div>
-            <label className="text-xs font-medium text-gray-400 mb-1.5 block ml-1">Email</label>
-            <input
-              type="email"
-              placeholder="nama@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-white/[0.05] border border-white/10 text-white focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all placeholder:text-gray-600"
-            />
+          <h2 className="text-3xl xl:text-4xl font-black tracking-tight leading-tight text-white">
+            Mulai Langkah Bijak Mengelola Keuanganmu.
+          </h2>
+
+          <p className="text-slate-400 text-sm xl:text-base leading-relaxed">
+            Daftarkan dirimu untuk mengakses dasbor finansial terpadu, atur wishlist tabungan, dan kelola arus kas harian.
+          </p>
+
+          <div className="space-y-2.5 pt-1">
+            {[
+              "Akses Gratis Selamanya Tanpa Biaya Tersembunyi",
+              "Pengelompokan Kategori Transaksi Otomatis",
+              "Privasi & Enkripsi Akun Dikelola Penuh Olehmu"
+            ].map((feature, idx) => (
+              <div key={idx} className="flex items-center gap-2.5 text-xs xl:text-sm text-slate-300 font-medium">
+                <CheckCircle2 size={16} className="text-cyan-400 shrink-0" />
+                <span>{feature}</span>
+              </div>
+            ))}
           </div>
 
-          <div>
-            <label className="text-xs font-medium text-gray-400 mb-1.5 block ml-1">Password</label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                placeholder="Min. 6 karakter"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-white/[0.05] border border-white/10 text-white focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all pr-12 placeholder:text-gray-600"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition cursor-pointer"
-              >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-              </button>
+          <div className="pt-4 grid grid-cols-2 gap-3">
+            <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/5 backdrop-blur-md">
+              <p className="text-[11px] text-slate-400 font-medium">Registrasi Akun</p>
+              <p className="text-lg font-bold text-white mt-0.5 flex items-center gap-1.5">
+                Cepat & Mudah <Zap size={15} className="text-amber-400" />
+              </p>
+            </div>
+            <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/5 backdrop-blur-md">
+              <p className="text-[11px] text-slate-400 font-medium">Proteksi Akun</p>
+              <p className="text-lg font-bold text-white mt-0.5 flex items-center gap-1.5">
+                Keamanan Maksimal <Lock size={15} className="text-cyan-400" />
+              </p>
             </div>
           </div>
-
-          <button
-            onClick={handleRegister}
-            disabled={loading}
-            className={`w-full py-3.5 mt-2 rounded-xl font-bold text-white shadow-lg shadow-blue-900/20 transition-all active:scale-[0.98]
-              ${loading ? "bg-blue-600/50 cursor-not-allowed" : "bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 cursor-pointer"}`}
-          >
-            {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Mendaftarkan...
-              </span>
-            ) : "Buat Akun Sekarang"}
-          </button>
         </div>
 
-        <p className="text-sm text-gray-400 text-center mt-8">
-          Sudah punya akun?{" "}
-          <button
-            onClick={() => router.push("/login")}
-            className="text-blue-400 font-medium hover:text-blue-300 hover:underline transition-all cursor-pointer"
-          >
-            Login
-          </button>
-        </p>
+        {/* Footer Info */}
+        <div className="relative z-10 text-[11px] text-slate-500 font-mono tracking-wider uppercase">
+          © 2026 ArusKas App • All rights reserved
+        </div>
       </div>
+
+      {/* ================= SISI KANAN: FORM & 2 BULATAN CAHAYA (5 COL) ================= */}
+      <div className="lg:col-span-5 relative flex flex-col justify-center items-center p-6 sm:p-10 bg-slate-950/40 backdrop-blur-2xl overflow-hidden">
+        
+        {/* CSS Keyframes Animasi Pergerakan Pelan */}
+        <style jsx>{`
+          @keyframes floatTopLeft {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(40px, 50px) scale(1.1); }
+          }
+          @keyframes floatBottomRight {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(-40px, -50px) scale(1.1); }
+          }
+          .animate-glow-tl {
+            animation: floatTopLeft 14s ease-in-out infinite;
+          }
+          .animate-glow-br {
+            animation: floatBottomRight 16s ease-in-out infinite;
+          }
+        `}</style>
+
+        {/* 1. BULATAN CAHAYA ATAS KIRI */}
+        <div className="pointer-events-none absolute -top-16 -left-16 w-[360px] h-[360px] bg-cyan-500/20 rounded-full blur-[110px] animate-glow-tl" />
+
+        {/* 2. BULATAN CAHAYA BAWAH KANAN */}
+        <div className="pointer-events-none absolute -bottom-16 -right-16 w-[360px] h-[360px] bg-blue-600/25 rounded-full blur-[110px] animate-glow-br" />
+
+        {/* Tombol Beranda */}
+        <button
+          onClick={() => router.push("/")}
+          className="absolute top-6 right-6 text-slate-400 hover:text-white flex items-center gap-2 text-xs transition z-20 group cursor-pointer px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 backdrop-blur-md"
+        >
+          <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
+          Beranda
+        </button>
+
+        {/* Form Container */}
+        <div className="w-full max-w-sm space-y-5 relative z-10">
+          
+          <div>
+            <h1 className="text-2xl xl:text-3xl font-black text-white tracking-tight">Buat Akun</h1>
+            <p className="text-slate-400 text-xs xl:text-sm mt-1.5">Isi data di bawah untuk membuat akun baru.</p>
+          </div>
+
+          <div className="space-y-3.5">
+            <div>
+              <label className="text-xs font-semibold text-slate-300 mb-1 block ml-0.5">Nama Lengkap</label>
+              <input
+                type="text"
+                placeholder="Masukkan nama Anda"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.04] border border-white/10 text-white focus:bg-white/[0.07] focus:ring-2 focus:ring-cyan-400/50 outline-none transition-all placeholder:text-slate-600 text-sm font-medium"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-slate-300 mb-1 block ml-0.5">Email</label>
+              <input
+                type="email"
+                placeholder="nama@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.04] border border-white/10 text-white focus:bg-white/[0.07] focus:ring-2 focus:ring-cyan-400/50 outline-none transition-all placeholder:text-slate-600 text-sm font-medium"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-slate-300 mb-1 block ml-0.5">Password</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Min. 6 karakter"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.04] border border-white/10 text-white focus:bg-white/[0.07] focus:ring-2 focus:ring-cyan-400/50 outline-none transition-all pr-10 placeholder:text-slate-600 text-sm font-medium"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition cursor-pointer"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              onClick={handleRegister}
+              disabled={loading}
+              className={`w-full py-3 rounded-xl font-bold text-white text-sm transition-all duration-300 active:scale-[0.98] cursor-pointer mt-2
+                ${loading ? "bg-cyan-600/50 cursor-not-allowed" : "bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 shadow-[0_0_25px_rgba(6,182,212,0.4)]"}`}
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Mendaftarkan...
+                </span>
+              ) : "Daftar Sekarang"}
+            </button>
+          </div>
+
+          <p className="text-xs text-slate-400 text-center font-normal">
+            Sudah punya akun?{" "}
+            <button
+              onClick={() => router.push("/login")}
+              className="text-cyan-400 font-semibold hover:text-cyan-300 hover:underline transition-all cursor-pointer"
+            >
+              Login di sini
+            </button>
+          </p>
+
+        </div>
+      </div>
+
     </div>
   );
 }

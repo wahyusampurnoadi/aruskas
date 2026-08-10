@@ -76,33 +76,43 @@ function FeatureCard3D({ icon, title, description, color, badge }) {
 export default function Home() {
   const router = useRouter();
 
+  // Elemen tunggal Marquee untuk dirender berulang secara rapi
+  const MarqueeItem = () => (
+    <div className="flex items-center gap-2 shrink-0 px-6">
+      <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
+      <span className="text-xs font-medium text-slate-300">
+        Project Developed by
+        <a
+          href="https://instagram.com/wahyu_smprna"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mx-1.5 inline-flex items-center gap-1 font-semibold text-cyan-300 transition-all hover:text-white hover:underline"
+        >
+          <Instagram className="h-3.5 w-3.5" />
+          @wahyu_smprna
+        </a>
+        • Support project ini di IG ❤️
+      </span>
+    </div>
+  );
+
   return (
     <div className="relative min-h-screen flex flex-col bg-[#030712] text-slate-100 overflow-hidden selection:bg-cyan-500/30 font-sans">
       
-      {/* 1. TOP MARQUEE BANNER */}
-      <div className="relative z-50 mx-auto mt-4 w-[92%] max-w-7xl overflow-hidden rounded-full border border-white/10 bg-slate-900/60 backdrop-blur-xl shadow-lg">
+      {/* 1. TOP MARQUEE BANNER (PERBAIKAN RAPI & SEAMLESS) */}
+      <div className="relative z-50 mx-auto mt-4 w-[92%] max-w-7xl overflow-hidden rounded-full border border-white/10 bg-slate-900/60 backdrop-blur-xl shadow-lg py-2.5">
         <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-cyan-400/10 to-indigo-500/10 pointer-events-none" />
-        <div className="relative py-2.5">
-          <div className="flex whitespace-nowrap animate-[marquee_25s_linear_infinite] text-xs font-medium text-slate-300">
-            {[...Array(4)].map((_, i) => (
-              <span key={i} className="mx-8 flex items-center gap-2">
-                <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
-                <span>
-                  Project Developed by
-                  <a
-                    href="https://instagram.com/wahyu_smprna"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mx-1.5 inline-flex items-center gap-1 font-semibold text-cyan-300 transition-all hover:text-white hover:underline"
-                  >
-                    <Instagram className="h-3.5 w-3.5" />
-                    @wahyu_smprna
-                  </a>
-                  • Support project ini di IG ❤️
-                </span>
-              </span>
-            ))}
-          </div>
+        
+        {/* Masking Fade di Sisi Kiri & Kanan */}
+        <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-12 bg-gradient-to-r from-[#030712] to-transparent" />
+        <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-12 bg-gradient-to-l from-[#030712] to-transparent" />
+
+        {/* Outer Container Animasi Loop */}
+        <div className="flex w-max animate-[marquee_25s_linear_infinite] hover:[animation-play-state:paused]">
+          <MarqueeItem />
+          <MarqueeItem />
+          <MarqueeItem />
+          <MarqueeItem />
         </div>
       </div>
 
