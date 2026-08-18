@@ -18,8 +18,9 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
+import UserProfileBadge from "@/components/premium/UserProfileBadge";
 
-export default function Sidebar({ user, onLogout }) {
+export default function Sidebar({ onLogout }) {
   const pathname = usePathname();
   const [showMobileNav, setShowMobileNav] = useState(true);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
@@ -167,34 +168,7 @@ export default function Sidebar({ user, onLogout }) {
       {/* MOBILE TOP HEADER PROFILE */}
       {/* ========================= */}
       <header className="lg:hidden sticky top-0 z-40 w-full bg-[#070d19]/80 backdrop-blur-2xl border-b border-white/10 px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3 min-w-0">
-          {/* Avatar User */}
-          <div className="w-9 h-9 rounded-full overflow-hidden bg-gradient-to-tr from-cyan-500 to-blue-600 text-white font-bold flex items-center justify-center text-sm border border-white/20 shadow-inner shrink-0">
-            {user?.photoURL ? (
-              <img
-                src={user.photoURL}
-                alt={user.displayName || "User Avatar"}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              (
-                user?.displayName?.charAt(0) ||
-                user?.email?.charAt(0) ||
-                "U"
-              ).toUpperCase()
-            )}
-          </div>
-
-          {/* Nama & Email */}
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-bold text-white truncate leading-tight">
-              {user?.displayName || "Pengguna"}
-            </p>
-            <p className="text-[10px] text-slate-400 truncate mt-0.5">
-              {user?.email || "user@gmail.com"}
-            </p>
-          </div>
-        </div>
+        <UserProfileBadge />
 
         {/* Tombol Logout Mobile */}
         <button
@@ -251,7 +225,7 @@ export default function Sidebar({ user, onLogout }) {
           </div>
         </div>
 
-        {/* NAVIGASI MENU DESKTOP (SCROLL DENGAN PADDING AGAR EFEK GLOW TIDAK TERPOTONG) */}
+        {/* NAVIGASI MENU DESKTOP */}
         <nav className="flex-1 overflow-y-auto space-y-1.5 px-2 py-3 my-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <p className="px-2 text-[11px] font-bold tracking-wider text-slate-500 uppercase mb-2">
             Menu Utama
@@ -298,35 +272,11 @@ export default function Sidebar({ user, onLogout }) {
           })}
         </nav>
 
-        {/* PROFILE CARD & LOGOUT DESKTOP (FIXED DI BAWAH) */}
+        {/* PROFILE CARD & LOGOUT DESKTOP */}
         <div className="pt-2 px-2 pb-2 shrink-0">
           <div className="p-3.5 rounded-2xl bg-slate-900/60 border border-white/5 backdrop-blur-md flex flex-col gap-3">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-tr from-cyan-500 to-blue-600 text-white font-bold flex items-center justify-center text-base border border-white/20 shadow-inner shrink-0">
-                {user?.photoURL ? (
-                  <img
-                    src={user.photoURL}
-                    alt={user.displayName || "User Avatar"}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  (
-                    user?.displayName?.charAt(0) ||
-                    user?.email?.charAt(0) ||
-                    "U"
-                  ).toUpperCase()
-                )}
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-white truncate">
-                  {user?.displayName || "Pengguna"}
-                </p>
-                <p className="text-xs text-slate-400 truncate">
-                  {user?.email || "user@gmail.com"}
-                </p>
-              </div>
-            </div>
+            {/* Panggil komponen UserProfileBadge agar modular */}
+            <UserProfileBadge />
 
             <button
               onClick={handleConfirmLogout}

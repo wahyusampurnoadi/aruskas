@@ -1,8 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { Upload, X, Eye, Sparkles, FileText, Loader2 } from "lucide-react";
+import { useState, useRef } from "react";
+import { Upload, X, Eye, Sparkles, FileText, Loader2, Lock, Crown } from "lucide-react";
 import { toast } from "sonner";
+import { cropAndCompressImage } from "@/lib/utils";
+import { usePro } from "@/app/hooks/usePro";
+import { auth } from "@/lib/firebase";
 
 export default function TransactionForm({
   formRef,
@@ -29,77 +32,81 @@ export default function TransactionForm({
   selectedGoalId,
   setSelectedGoalId,
   onPreviewClick,
+  onUpgradeClick,
 }) {
+  const { isPro } = usePro();
+
   const [activeTab, setActiveTab] = useState("scan");
   const [scanning, setScanning] = useState(false);
+  
+  const abortControllerRef = useRef(null);
 
-  // Helper untuk Kompresi Gambar di Sisi Client
-  const compressImage = (file) => {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = (event) => {
-        const img = new Image();
-        img.src = event.target.result;
-        img.onload = () => {
-          const canvas = document.createElement("canvas");
-          const MAX_WIDTH = 800; // Pembatasan lebar maksimum
-          const scaleSize = MAX_WIDTH / img.width;
+  const INCOME_CATEGORIES = ["Gaji", "Bonus", "Freelance", "Investasi", "Lainnya"];
+  const EXPENSE_CATEGORIES = [
+    "Makanan & Minuman",
+    "Transportasi",
+    "Belanja",
+    "Tagihan & Utilitas",
+    "Hiburan",
+    "Kesehatan",
+    "Pendidikan",
+    "Wishlist",
+    "Lainnya",
+  ];
 
-          if (scaleSize < 1) {
-            canvas.width = MAX_WIDTH;
-            canvas.height = img.height * scaleSize;
-          } else {
-            canvas.width = img.width;
-            canvas.height = img.height;
-          }
-
-          const ctx = canvas.getContext("2d");
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-          canvas.toBlob(
-            (blob) => {
-              resolve(new File([blob], file.name, { type: "image/jpeg" }));
-            },
-            "image/jpeg",
-            0.7 // Kualitas kompresi 70%
-          );
-        };
-      };
-    });
-  };
-
-  // Handler Pemrosesan Gambar via Groq AI
   const handleAIScan = async (e) => {
+    if (!isPro) {
+      toast.error("Fitur Scan Struk AI khusus untuk pengguna ArusKas Pro!");
+      return;
+    }
+
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Ukuran file awal maksimal 5 MB");
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Ukuran file awal maksimal 10 MB");
+      return;
+    }
+
+    // Ambil Firebase ID Token pengguna yang sedang aktif
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      toast.error("Sesi Anda berakhir. Silakan login kembali!");
       return;
     }
 
     setScanning(true);
 
-    try {
-      // 1. Kompresi gambar terlebih dahulu
-      const compressedFile = await compressImage(file);
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
-      // Set preview & file di state parent
-      setImageFile(compressedFile);
+    try {
+      const idToken = await currentUser.getIdToken();
+      const processedFile = await cropAndCompressImage(file);
+
+      setImageFile(processedFile);
       const reader = new FileReader();
       reader.onload = () => setImagePreview(reader.result);
-      reader.readAsDataURL(compressedFile);
+      reader.readAsDataURL(processedFile);
 
-      // 2. Siapkan FormData
       const formData = new FormData();
-      formData.append("file", compressedFile);
+      formData.append("file", processedFile);
 
-      // 3. Eksekusi request scan ke backend
+      // Kirim ID Token di header Authorization
       const res = await fetch("/api/scan-receipt", {
         method: "POST",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+        },
         body: formData,
+        signal: controller.signal,
       });
+
+      // Penanganan jika server mengembalikan HTML (Error 500/404)
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("Server mengembalikan respons non-JSON. Periksa log server.");
+      }
 
       const result = await res.json();
 
@@ -112,71 +119,128 @@ export default function TransactionForm({
           category: aiCategory,
         } = result.data;
 
-        if (aiType) setType(aiType);
-        if (aiAmount) {
+        const targetType = aiType || "income";
+        setType(targetType);
+
+        if (aiAmount !== undefined && aiAmount !== null) {
           setAmount(new Intl.NumberFormat("id-ID").format(Number(aiAmount)));
         }
+
         if (date) setTransactionDate(date);
         if (merchantName) setNote(merchantName);
-        if (aiCategory) setCategory(aiCategory);
+
+        const validCategories =
+          targetType === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+        
+        if (aiCategory && validCategories.includes(aiCategory)) {
+          setCategory(aiCategory);
+        } else {
+          setCategory(targetType === "income" ? "Freelance" : "Lainnya");
+        }
 
         toast.success("Data berhasil diekstrak oleh AI! ✨");
-        setActiveTab("manual"); // Pindah ke form manual untuk review
+        setActiveTab("manual");
       } else {
         toast.error(result.error || "AI gagal membaca detail struk.");
         setActiveTab("manual");
       }
     } catch (err) {
-      console.error(err);
-      toast.error("Terjadi kesalahan jaringan/server.");
-      setActiveTab("manual");
+      if (err.name === "AbortError") {
+        toast.info("Pemindaian struk dibatalkan.");
+      } else {
+        console.error(err);
+        toast.error(err.message || "Terjadi kesalahan jaringan/server.");
+        setActiveTab("manual");
+      }
     } finally {
       setScanning(false);
+      abortControllerRef.current = null;
     }
+  };
+
+  const handleCancelScan = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    setScanning(false);
   };
 
   return (
     <div className="space-y-4">
       {/* Switcher Tab Mode */}
-      <div className="flex bg-slate-950/80 p-1 rounded-xl border border-white/10">
+      <div className="grid grid-cols-2 bg-slate-950/80 p-1.5 rounded-xl border border-white/10 gap-1.5">
         <button
           type="button"
           onClick={() => setActiveTab("scan")}
-          className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+          className={`px-2 py-2 sm:px-3 sm:py-2.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer ${
             activeTab === "scan"
               ? "bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 shadow-md"
               : "text-slate-400 hover:text-white"
           }`}
         >
-          <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-          <span>Scan Struk (AI)</span>
+          <Sparkles className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+          <span className="whitespace-nowrap text-[11px] sm:text-xs">Scan Struk (AI)</span>
+          <span className="px-1 py-0.5 sm:px-1.5 text-[8px] sm:text-[9px] bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 font-extrabold rounded-md flex items-center gap-0.5 shrink-0 uppercase">
+            <Crown className="w-2.5 h-2.5 fill-slate-950" />
+            PRO
+          </span>
         </button>
+
         <button
           type="button"
           onClick={() => setActiveTab("manual")}
-          className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+          className={`px-2 py-2 sm:px-3 sm:py-2.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer ${
             activeTab === "manual"
               ? "bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 shadow-md"
               : "text-slate-400 hover:text-white"
           }`}
         >
-          <FileText className="w-3.5 h-3.5 text-indigo-400" />
-          <span>Form Manual</span>
+          <FileText className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+          <span className="whitespace-nowrap text-[11px] sm:text-xs">Form Manual</span>
         </button>
       </div>
 
       {/* TAB 1: SCAN STRUK VIA AI */}
       {activeTab === "scan" && (
-        <div className="p-6 border border-dashed border-indigo-500/30 hover:border-indigo-500/60 rounded-2xl bg-indigo-950/10 flex flex-col items-center justify-center text-center space-y-3 transition-all min-h-[220px]">
-          {scanning ? (
+        <div className="p-6 border border-dashed border-indigo-500/30 rounded-2xl bg-indigo-950/10 flex flex-col items-center justify-center text-center space-y-3 transition-all min-h-[220px] relative overflow-hidden">
+          {!isPro ? (
+            <div className="flex flex-col items-center justify-center space-y-3 py-2">
+              <div className="p-3 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                <Lock className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-xs font-bold text-white flex items-center justify-center gap-1">
+                  Fitur Eksklusif ArusKas PRO
+                </h4>
+                <p className="text-[10px] text-slate-400 max-w-[260px]">
+                  Otomatis catat transaksi cukup dengan unggah foto struk belanja atau resi transfer.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={onUpgradeClick}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold text-xs shadow-lg shadow-amber-500/20 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
+              >
+                <Crown className="w-3.5 h-3.5 fill-slate-950" />
+                <span>Upgrade Ke Pro</span>
+              </button>
+            </div>
+          ) : scanning ? (
             <div className="flex flex-col items-center gap-2 py-4">
               <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
               <p className="text-xs font-semibold text-indigo-200">
-                Groq AI sedang membaca struk...
+                AI sedang membaca struk... (estimasi 10-20 detik)
               </p>
               <p className="text-[10px] text-slate-400">
                 Mengekstrak nominal, tanggal, & keterangan
               </p>
+              <button
+                type="button"
+                onClick={handleCancelScan}
+                className="mt-2 text-[11px] text-rose-400 hover:underline cursor-pointer"
+              >
+                Batal
+              </button>
             </div>
           ) : (
             <label className="flex flex-col items-center justify-center cursor-pointer w-full h-full">
@@ -187,7 +251,7 @@ export default function TransactionForm({
                 Upload Struk / Screenshot Transfer
               </span>
               <span className="text-[10px] text-slate-400 mb-3">
-                Format JPG, PNG (Max 5MB, dikompres otomatis)
+                Format JPG, PNG (Max 10MB, dikompres otomatis)
               </span>
               <span className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-semibold transition-all shadow-md">
                 Pilih Foto

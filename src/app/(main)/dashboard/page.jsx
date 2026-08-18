@@ -28,6 +28,8 @@ import FinanceChart from "@/components/dashboard/FinanceChart";
 import TransactionList from "@/components/dashboard/TransactionList";
 import TransactionForm from "@/components/dashboard/TransactionForm";
 import DashboardFilter from "@/components/dashboard/DashboardFilter";
+import FinancialHealthCard from "@/components/premium/FinancialHealthCard";
+import UpgradeProModal from "@/components/premium/UpgradeProModal";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -37,6 +39,17 @@ export default function DashboardPage() {
   const { goals } = useSavingGoals();
 
   const [currency, setCurrency] = useState("IDR");
+
+  // State status Pro user & Modal Upgrade
+  const [isProUser, setIsProUser] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+  // Sync status Pro dari data user jika tersedia
+  useEffect(() => {
+    if (user) {
+      setIsProUser(user.isPro || false);
+    }
+  }, [user]);
 
   const {
     transactions,
@@ -96,7 +109,7 @@ export default function DashboardPage() {
   const [uploading, setUploading] = useState(false);
 
   const [transactionDate, setTransactionDate] = useState(
-    new Date().toISOString().split("T")[0],
+    new Date().toISOString().split("T")[0]
   );
 
   const monthNames = [
@@ -117,7 +130,7 @@ export default function DashboardPage() {
   const activePeriodLabel = useMemo(() => {
     if (filterMode === "custom" && startDate && endDate) {
       return `${new Date(startDate).toLocaleDateString("id-ID")} - ${new Date(
-        endDate,
+        endDate
       ).toLocaleDateString("id-ID")}`;
     }
 
@@ -146,7 +159,7 @@ export default function DashboardPage() {
       window.removeEventListener("currencyChange", updateCurrency);
       window.removeEventListener(
         "storage_hide_balance",
-        updateBalanceVisibility,
+        updateBalanceVisibility
       );
       window.removeEventListener("storage", updateBalanceVisibility);
     };
@@ -340,6 +353,10 @@ export default function DashboardPage() {
     applyCustomRange(startDate, endDate);
   };
 
+  const handleOpenUpgrade = () => {
+    setShowUpgradeModal(true);
+  };
+
   return (
     <div className="min-h-screen text-white">
       <main className="relative z-10 space-y-8 p-4 md:p-6 lg:p-8">
@@ -381,6 +398,16 @@ export default function DashboardPage() {
           activePeriodLabel={activePeriodLabel}
           resetToMonthly={resetToMonthly}
           handleApplyCustomFilter={handleApplyCustomFilter}
+        />
+
+        {/* FINANCIAL HEALTH SCORE (FITUR PRO) */}
+        <FinancialHealthCard
+          isPro={isProUser}
+          income={income || 0}
+          expense={expense || 0}
+          totalSavings={totalBalance || 0}
+          monthlyDebt={0}
+          onUpgrade={handleOpenUpgrade}
         />
 
         {/* CHART + STATS */}
@@ -590,11 +617,20 @@ export default function DashboardPage() {
                   selectedGoalId={selectedGoalId}
                   setSelectedGoalId={setSelectedGoalId}
                   onPreviewClick={(url) => setPreviewImageModalUrl(url)}
+                  isProUser={isProUser}
+                  onUpgradeClick={handleOpenUpgrade}
                 />
               </div>
             </div>
           </div>
         )}
+
+        {/* MODAL UPGRADE TO PRO */}
+        <UpgradeProModal
+          isOpen={showUpgradeModal}
+          onClose={() => setShowUpgradeModal(false)}
+          onSuccessUpgrade={() => setIsProUser(true)}
+        />
 
         {/* MODAL FULLSCREEN PREVIEW GAMBAR STRUK */}
         {previewImageModalUrl && (
