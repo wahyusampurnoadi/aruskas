@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { User, Palette, ShieldAlert } from "lucide-react";
+import { User, Palette, ShieldAlert, Crown } from "lucide-react";
 import { toast } from "sonner";
 import { updateProfile, onAuthStateChanged } from "firebase/auth";
 import { collection, query, where, getDocs } from "firebase/firestore";
@@ -10,6 +10,7 @@ import * as XLSX from "xlsx-js-style";
 
 import ProfileTab from "@/components/settings/ProfileTab";
 import AppearanceTab from "@/components/settings/AppearanceTab";
+import PremiumTab from "@/components/settings/PremiumTab";
 import DataTab from "@/components/settings/DataTab";
 
 export default function SettingsPage({ user: initialUser }) {
@@ -318,9 +319,11 @@ export default function SettingsPage({ user: initialUser }) {
     }
   };
 
+  // DAFTAR TAB DENGAN "FITUR PREMIUM" BERADA DI ATAS "DATA & KEAMANAN"
   const tabs = [
     { id: "profile", label: "Profil & Akun", icon: User },
     { id: "appearance", label: "Tampilan & Privasi", icon: Palette },
+    { id: "premium", label: "Fitur Premium", icon: Crown },
     { id: "data", label: "Data & Keamanan", icon: ShieldAlert },
   ];
 
@@ -329,7 +332,7 @@ export default function SettingsPage({ user: initialUser }) {
       <div>
         <h1 className="text-3xl font-black tracking-tight">Pengaturan</h1>
         <p className="text-sm text-slate-400 mt-1">
-          Kelola profil akun, tampilan aplikasi, dan keamanan data ArusKas
+          Kelola profil akun, tampilan aplikasi, paket langganan, dan keamanan data ArusKas
         </p>
       </div>
 
@@ -343,14 +346,25 @@ export default function SettingsPage({ user: initialUser }) {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all cursor-pointer ${
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-bold transition-all cursor-pointer ${
                   isActive
                     ? "bg-cyan-600 text-white shadow-lg shadow-cyan-500/20"
                     : "bg-slate-900/60 border border-white/5 text-slate-400 hover:text-white hover:bg-white/5"
                 }`}
               >
-                <Icon className="w-4 h-4" />
-                <span>{tab.label}</span>
+                <div className="flex items-center gap-3">
+                  <Icon className={`w-4 h-4 ${tab.isPro && !isActive ? "text-amber-400" : ""}`} />
+                  <span>{tab.label}</span>
+                </div>
+                {tab.isPro && (
+                  <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                    isActive 
+                      ? "bg-white/20 text-white border-white/30" 
+                      : "bg-amber-400/20 text-amber-300 border-amber-400/30"
+                  }`}>
+                    PRO
+                  </span>
+                )}
               </button>
             );
           })}
@@ -372,6 +386,8 @@ export default function SettingsPage({ user: initialUser }) {
               setHideBalanceByDefault={handleToggleHideBalance}
             />
           )}
+
+          {activeTab === "premium" && <PremiumTab />}
 
           {activeTab === "data" && (
             <DataTab
