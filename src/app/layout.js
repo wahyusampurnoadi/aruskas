@@ -14,8 +14,23 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "ArusKas",
-  description: "Track pendapatan dan pengeluaranmu",
+  metadataBase: new URL("https://aruskas.web.id"),
+  title: {
+    default: "ArusKas - Aplikasi Pencatat Keuangan",
+    template: "%s | ArusKas",
+  },
+  description: "Track pendapatan dan pengeluaranmu serta kelola keuangan secara praktis.",
+  alternates: {
+    canonical: "https://aruskas.web.id",
+  },
+  openGraph: {
+    title: "ArusKas - Aplikasi Pencatat Keuangan",
+    description: "Track pendapatan dan pengeluaranmu serta kelola keuangan secara praktis.",
+    url: "https://aruskas.web.id",
+    siteName: "ArusKas",
+    locale: "id_ID",
+    type: "website",
+  },
 };
 
 export default function RootLayout({ children }) {
