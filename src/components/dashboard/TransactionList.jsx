@@ -4,11 +4,14 @@ import { useState, useMemo } from "react";
 import Swal from "sweetalert2";
 
 export default function TransactionList({
-  transactions,
+  transactions = [],
   onEdit,
   onDelete,
   onExportExcel,
   onExportPDF,
+  onOpenAddModal,
+  selectedMonth,
+  selectedYear,
 }) {
   const [expandedId, setExpandedId] = useState(null);
   const [selectedDate, setSelectedDate] = useState("");
@@ -63,6 +66,12 @@ export default function TransactionList({
     if (!deleteConfirmItem) return;
     onDelete(deleteConfirmItem.id, deleteConfirmItem.imageUrl || "");
     setDeleteConfirmItem(null);
+  };
+
+  const handleAddClick = () => {
+    if (onOpenAddModal) {
+      onOpenAddModal({ month: selectedMonth, year: selectedYear });
+    }
   };
 
   const getCategoryConfig = (category = "") => {
@@ -168,32 +177,46 @@ export default function TransactionList({
             </p>
           </div>
 
-          {/* OPSI EXPORT */}
-          <div className="flex items-center gap-2.5">
+          {/* KELOMPOK TOMBOL AKSI HEADER */}
+          <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full sm:w-auto">
+            {/* TOMBOL UTAMA (Full width di mobile, auto di desktop) */}
             <button
-              onClick={onExportExcel}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 rounded-2xl text-xs font-bold transition shadow-sm cursor-pointer"
+              onClick={handleAddClick}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded-2xl text-xs transition active:scale-95 shadow-lg shadow-cyan-500/20 cursor-pointer whitespace-nowrap"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
               </svg>
-              Excel
+              <span>Tambah Transaksi</span>
             </button>
-            <button
-              onClick={onExportPDF}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500/20 rounded-2xl text-xs font-bold transition shadow-sm cursor-pointer"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-              </svg>
-              PDF
-            </button>
+
+            {/* TOMBOL EXPORT (Berdampingan 50%-50% di mobile) */}
+            <div className="flex items-center gap-2.5 w-full sm:w-auto">
+              <button
+                onClick={onExportExcel}
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 rounded-2xl text-xs font-bold transition shadow-sm cursor-pointer whitespace-nowrap"
+              >
+                <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Excel
+              </button>
+              <button
+                onClick={onExportPDF}
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500/20 rounded-2xl text-xs font-bold transition shadow-sm cursor-pointer whitespace-nowrap"
+              >
+                <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                PDF
+              </button>
+            </div>
           </div>
         </div>
 
         {/* BARIS KONTROL FILTER */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-4 border-t border-white/5 overflow-hidden">
-          {/* TIPE TRANSAKSI PILLS (DENGAN RESPONSIVE SCROLL & PENYESUAIAN LEBAR) */}
+          {/* TIPE TRANSAKSI PILLS */}
           <div className="flex items-center gap-1 p-1 bg-slate-950/60 rounded-2xl border border-white/5 w-full lg:w-auto overflow-x-auto max-w-full">
             <button
               onClick={() => setFilterType("all")}
@@ -283,17 +306,31 @@ export default function TransactionList({
       {/* DAFTAR DOKUMEN TRANSAKSI */}
       <div className="space-y-3">
         {filteredTransactions.length === 0 ? (
-          <div className="text-center p-12 bg-slate-900/40 border border-dashed border-white/10 rounded-3xl backdrop-blur-md">
-            <div className="inline-flex p-4 rounded-full bg-white/5 text-slate-500 mb-3">
+          <div className="flex flex-col items-center justify-center p-8 sm:p-12 bg-slate-900/40 border border-dashed border-white/10 rounded-3xl backdrop-blur-md text-center">
+            <div className="inline-flex p-4 rounded-full bg-white/5 text-slate-500 mb-4">
               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
               </svg>
             </div>
-            <p className="text-sm font-medium text-slate-400">
+            <p className="text-sm font-semibold text-white mb-1">
               {selectedDate || filterType !== "all"
                 ? "Tidak ada transaksi yang cocok dengan filter ini."
                 : "Belum ada transaksi di periode ini."}
             </p>
+            <p className="text-xs text-slate-400 max-w-sm mb-5">
+              Mulai catat transaksi keuangan Anda untuk melihat laporan di periode ini.
+            </p>
+
+            {/* TOMBOL UTAMA DI AREA KOSONG */}
+            <button
+              onClick={handleAddClick}
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-slate-950 font-bold rounded-2xl text-xs transition active:scale-95 shadow-lg shadow-cyan-500/25 cursor-pointer"
+            >
+              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+              </svg>
+              <span>Buat Transaksi Baru</span>
+            </button>
           </div>
         ) : (
           filteredTransactions.map((t) => {

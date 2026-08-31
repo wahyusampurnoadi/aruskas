@@ -3,8 +3,14 @@
 import { useState, useEffect } from "react";
 import { User, Palette, ShieldAlert, Crown } from "lucide-react";
 import { toast } from "sonner";
-import { updateProfile, onAuthStateChanged } from "firebase/auth";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { 
+  updateProfile, 
+  verifyBeforeUpdateEmail, 
+  reauthenticateWithCredential, 
+  EmailAuthProvider,
+  onAuthStateChanged 
+} from "firebase/auth";
+import { collection, query, where, getDocs, doc, setDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import * as XLSX from "xlsx-js-style";
 
@@ -12,11 +18,16 @@ import ProfileTab from "@/components/settings/ProfileTab";
 import AppearanceTab from "@/components/settings/AppearanceTab";
 import PremiumTab from "@/components/settings/PremiumTab";
 import DataTab from "@/components/settings/DataTab";
+import ReAuthModal from "@/components/settings/ReAuthModal";
 
 export default function SettingsPage({ user: initialUser }) {
   const [activeTab, setActiveTab] = useState("profile");
   const [loading, setLoading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+
+  // State Modal Re-Authentication Kustom
+  const [isReAuthOpen, setIsReAuthOpen] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState("");
 
   // State Profil User
   const [profile, setProfile] = useState({
@@ -25,7 +36,7 @@ export default function SettingsPage({ user: initialUser }) {
     photoURL: initialUser?.photoURL || "",
   });
 
-  // State Preferensi Tampilan (Membaca dari localStorage)
+  // State Preferensi Tampilan
   const [hideBalanceByDefault, setHideBalanceByDefault] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("hideBalanceByDefault") === "true";
@@ -47,13 +58,12 @@ export default function SettingsPage({ user: initialUser }) {
     return () => unsubscribe();
   }, []);
 
-  // FUNGSI TOGGLE PRIVASI SALDO (Simpan ke LocalStorage & Memicu Event Global)
+  // FUNGSI TOGGLE PRIVASI SALDO
   const handleToggleHideBalance = () => {
     const newValue = !hideBalanceByDefault;
     setHideBalanceByDefault(newValue);
     localStorage.setItem("hideBalanceByDefault", String(newValue));
 
-    // Memicu event agar komponen lain (seperti Dashboard / Topbar) mendeteksi perubahan seketika
     window.dispatchEvent(new Event("storage_hide_balance"));
 
     if (newValue) {
@@ -75,7 +85,6 @@ export default function SettingsPage({ user: initialUser }) {
     try {
       let docsList = [];
 
-      // 1. Ambil data transaksi dari Firestore
       const q1 = query(
         collection(db, "transactions"),
         where("userId", "==", currentUser.uid)
@@ -108,7 +117,6 @@ export default function SettingsPage({ user: initialUser }) {
         return;
       }
 
-      // Helper function konversi tanggal
       const parseToDate = (targetDate) => {
         if (!targetDate) return new Date(0);
         if (typeof targetDate.toDate === "function") return targetDate.toDate();
@@ -117,14 +125,12 @@ export default function SettingsPage({ user: initialUser }) {
         return isNaN(parsed.getTime()) ? new Date(0) : parsed;
       };
 
-      // 2. URUTKAN DATA DARI TANGGAL TERBARU KE TERLAMA
       docsList.sort((a, b) => {
         const dateA = parseToDate(a.date || a.transactionDate || a.createdAt);
         const dateB = parseToDate(b.date || b.transactionDate || b.createdAt);
         return dateB.getTime() - dateA.getTime();
       });
 
-      // 3. SUSUN SHEET DATA DENGAN BARIS PEMBATAS BULAN
       const rows = [];
       let currentMonthYear = "";
       const merges = [];
@@ -146,7 +152,6 @@ export default function SettingsPage({ user: initialUser }) {
           if (monthYear !== currentMonthYear) {
             currentMonthYear = monthYear;
 
-            // Baris kosong pemisah antar bulan
             if (rows.length > 0) {
               rows.push({
                 Tanggal: "",
@@ -157,7 +162,7 @@ export default function SettingsPage({ user: initialUser }) {
               });
             }
 
-            const headerRowIdx = rows.length + 1; // +1 untuk baris header tabel utama
+            const headerRowIdx = rows.length + 1;
             monthHeaderRows.push(headerRowIdx);
 
             merges.push({
@@ -193,23 +198,20 @@ export default function SettingsPage({ user: initialUser }) {
         });
       });
 
-      // 4. Generate Worksheet
       const worksheet = XLSX.utils.json_to_sheet(rows);
 
       if (merges.length > 0) {
         worksheet["!merges"] = merges;
       }
 
-      // Lebar kolom
       worksheet["!cols"] = [
-        { wch: 22 }, // Tanggal / Header Bulan
-        { wch: 25 }, // Kategori
-        { wch: 16 }, // Tipe
-        { wch: 18 }, // Jumlah
-        { wch: 45 }, // Catatan
+        { wch: 22 },
+        { wch: 25 },
+        { wch: 16 },
+        { wch: 18 },
+        { wch: 45 },
       ];
 
-      // Definisikan Style Border Tipis
       const thinBorder = {
         top: { style: "thin", color: { auto: 1 } },
         bottom: { style: "thin", color: { auto: 1 } },
@@ -219,7 +221,6 @@ export default function SettingsPage({ user: initialUser }) {
 
       const range = XLSX.utils.decode_range(worksheet["!ref"] || "A1:A1");
 
-      // Apply Style ke Semua Sel
       for (let R = range.s.r; R <= range.e.r; ++R) {
         for (let C = range.s.c; C <= range.e.c; ++C) {
           const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
@@ -230,7 +231,6 @@ export default function SettingsPage({ user: initialUser }) {
 
           const cell = worksheet[cellAddress];
 
-          // Header Utama Tabel (Baris 1)
           if (R === 0) {
             cell.s = {
               font: { bold: true, color: { rgb: "FFFFFF" } },
@@ -241,7 +241,6 @@ export default function SettingsPage({ user: initialUser }) {
             continue;
           }
 
-          // Header Bulan
           if (monthHeaderRows.includes(R)) {
             cell.s = {
               font: { bold: true, color: { rgb: "0F766E" } },
@@ -252,12 +251,11 @@ export default function SettingsPage({ user: initialUser }) {
             continue;
           }
 
-          // Data Transaksi
           cell.s = {
             border: thinBorder,
             alignment: {
               vertical: "center",
-              horizontal: C === 4 ? "left" : "center", // Catatan Rata Kiri, sisanya Rata Tengah
+              horizontal: C === 4 ? "left" : "center",
             },
           };
         }
@@ -280,7 +278,6 @@ export default function SettingsPage({ user: initialUser }) {
     }
   };
 
-  // FUNGSI RESET DATA (Placeholder)
   const handleResetData = () => {
     if (
       confirm(
@@ -291,6 +288,56 @@ export default function SettingsPage({ user: initialUser }) {
     }
   };
 
+  // HANDLER PROSES RE-AUTHENTICATION SETELAH USER MEMASUKKAN PASSWORD DI MODAL
+  const handleConfirmReAuth = async (password) => {
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser || !currentUser.email) return;
+
+      // 1. Verifikasi kata sandi lama
+      const credential = EmailAuthProvider.credential(
+        currentUser.email,
+        password
+      );
+      await reauthenticateWithCredential(currentUser, credential);
+
+      // 2. Kirim email verifikasi ke alamat email baru
+      await verifyBeforeUpdateEmail(currentUser, pendingEmail);
+
+      // 3. Simpan nama/foto terbaru ke Firestore
+      await updateProfile(currentUser, {
+        displayName: profile.name,
+        photoURL: profile.photoURL || "",
+      });
+
+      await setDoc(
+        doc(db, "users", currentUser.uid),
+        {
+          displayName: profile.name,
+          photoURL: profile.photoURL || "",
+          updatedAt: new Date(),
+        },
+        { merge: true }
+      );
+
+      setIsReAuthOpen(false);
+      toast.success(
+        "Link verifikasi dikirim ke email baru! Silakan cek inbox/spam untuk mengonfirmasi."
+      );
+    } catch (error) {
+      console.error("ReAuth Error:", error);
+      if (
+        error.code === "auth/wrong-password" ||
+        error.code === "auth/invalid-credential"
+      ) {
+        toast.error("Kata sandi yang Anda masukkan salah!");
+      } else {
+        toast.error("Gagal memverifikasi: " + error.message);
+      }
+    }
+  };
+
+  // HANDLER SIMPAN PROFIL
   const handleSaveProfile = async (e) => {
     e.preventDefault();
     if (!profile.name.trim()) {
@@ -298,19 +345,41 @@ export default function SettingsPage({ user: initialUser }) {
       return;
     }
 
+    if (!profile.email.trim()) {
+      toast.error("Email tidak boleh kosong");
+      return;
+    }
+
+    const currentUser = auth.currentUser;
+    if (!currentUser) return;
+
+    // JIKA EMAIL BERUBAH: Langsung buka modal re-auth tanpa eksekusi langsung
+    if (profile.email !== currentUser.email) {
+      setPendingEmail(profile.email);
+      setIsReAuthOpen(true);
+      return;
+    }
+
+    // JIKA HANYA NAMA / FOTO YANG BERUBAH
     setLoading(true);
     try {
-      const currentUser = auth.currentUser;
-      if (currentUser) {
-        await updateProfile(currentUser, {
+      await updateProfile(currentUser, {
+        displayName: profile.name,
+        photoURL: profile.photoURL || "",
+      });
+
+      await setDoc(
+        doc(db, "users", currentUser.uid),
+        {
           displayName: profile.name,
           photoURL: profile.photoURL || "",
-        });
+          updatedAt: new Date(),
+        },
+        { merge: true }
+      );
 
-        await currentUser.reload();
-        toast.success("Profil berhasil diperbarui ✨");
-        window.location.reload();
-      }
+      await currentUser.reload();
+      toast.success("Profil berhasil diperbarui ✨");
     } catch (error) {
       console.error(error);
       toast.error("Gagal memperbarui profil: " + error.message);
@@ -319,7 +388,6 @@ export default function SettingsPage({ user: initialUser }) {
     }
   };
 
-  // DAFTAR TAB DENGAN "FITUR PREMIUM" BERADA DI ATAS "DATA & KEAMANAN"
   const tabs = [
     { id: "profile", label: "Profil & Akun", icon: User },
     { id: "appearance", label: "Tampilan & Privasi", icon: Palette },
@@ -398,6 +466,13 @@ export default function SettingsPage({ user: initialUser }) {
           )}
         </div>
       </div>
+
+      {/* MODAL RE-AUTH KUSTOM */}
+      <ReAuthModal
+        isOpen={isReAuthOpen}
+        onClose={() => setIsReAuthOpen(false)}
+        onConfirm={handleConfirmReAuth}
+      />
     </div>
   );
 }

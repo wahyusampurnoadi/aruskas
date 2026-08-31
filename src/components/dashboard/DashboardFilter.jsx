@@ -107,11 +107,18 @@ export default function DashboardFilter({
                 onChange={(e) => setYear(Number(e.target.value))}
                 className="w-full rounded-xl border border-white/10 bg-slate-950/70 px-3.5 py-2.5 text-sm font-medium text-white outline-none focus:border-purple-400/50"
               >
-                {[2024, 2025, 2026, 2027].map((y) => (
-                  <option key={y} value={y} className="bg-slate-900 text-white">
-                    {y}
-                  </option>
-                ))}
+                {/* Dinamis dari +3 Tahun ke Depan, Turun dan Mentok di 2016 */}
+                {Array.from(
+                  { length: new Date().getFullYear() + 3 - 2016 + 1 },
+                  (_, i) => {
+                    const y = new Date().getFullYear() + 3 - i;
+                    return (
+                      <option key={y} value={y} className="bg-slate-900 text-white">
+                        {y}
+                      </option>
+                    );
+                  }
+                )}
               </select>
             </div>
 

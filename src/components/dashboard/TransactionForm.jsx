@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Upload, X, Eye, Sparkles, FileText, Loader2, Lock, Crown } from "lucide-react";
+import { Upload, X, Eye, Sparkles, FileText, Loader2, Lock, Crown, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { cropAndCompressImage } from "@/lib/utils";
 import { usePro } from "@/app/hooks/usePro";
@@ -38,7 +38,7 @@ export default function TransactionForm({
 
   const [activeTab, setActiveTab] = useState("scan");
   const [scanning, setScanning] = useState(false);
-  
+  const hiddenDateInputRef = useRef(null);
   const abortControllerRef = useRef(null);
 
   const INCOME_CATEGORIES = ["Gaji", "Bonus", "Freelance", "Investasi", "Lainnya"];
@@ -54,6 +54,13 @@ export default function TransactionForm({
     "Lainnya",
   ];
 
+  // Helper untuk memformat YYYY-MM-DD menjadi DD/MM/YYYY untuk tampilan UI
+  const formatDisplayDate = (isoDateStr) => {
+    if (!isoDateStr) return "DD/MM/YYYY";
+    const [year, month, day] = isoDateStr.split("-");
+    return `${day}/${month}/${year}`;
+  };
+
   const handleAIScan = async (e) => {
     if (!isPro) {
       toast.error("Fitur Scan Struk AI khusus untuk pengguna ArusKas Pro!");
@@ -68,7 +75,6 @@ export default function TransactionForm({
       return;
     }
 
-    // Ambil Firebase ID Token pengguna yang sedang aktif
     const currentUser = auth.currentUser;
     if (!currentUser) {
       toast.error("Sesi Anda berakhir. Silakan login kembali!");
@@ -92,7 +98,6 @@ export default function TransactionForm({
       const formData = new FormData();
       formData.append("file", processedFile);
 
-      // Kirim ID Token di header Authorization
       const res = await fetch("/api/scan-receipt", {
         method: "POST",
         headers: {
@@ -102,7 +107,6 @@ export default function TransactionForm({
         signal: controller.signal,
       });
 
-      // Penanganan jika server mengembalikan HTML (Error 500/404)
       const contentType = res.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
         throw new Error("Server mengembalikan respons non-JSON. Periksa log server.");
@@ -308,13 +312,26 @@ export default function TransactionForm({
                   <label className="block text-[11px] font-semibold text-slate-300 mb-1">
                     Tanggal
                   </label>
-                  <input
-                    type="date"
-                    value={transactionDate}
-                    onChange={(e) => setTransactionDate(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-950/60 border border-white/10 rounded-xl text-white text-xs focus:outline-none focus:border-indigo-500 transition-colors"
-                    required
-                  />
+                  {/* Tampilan Kustom DD/MM/YYYY */}
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => hiddenDateInputRef.current?.showPicker?.() || hiddenDateInputRef.current?.click()}
+                      className="w-full px-3 py-2 bg-slate-950/60 border border-white/10 rounded-xl text-white text-xs text-left focus:outline-none focus:border-indigo-500 transition-colors cursor-pointer flex items-center justify-between"
+                    >
+                      <span>{formatDisplayDate(transactionDate)}</span>
+                      <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                    </button>
+                    {/* Input Date Tersembunyi */}
+                    <input
+                      ref={hiddenDateInputRef}
+                      type="date"
+                      value={transactionDate}
+                      onChange={(e) => setTransactionDate(e.target.value)}
+                      className="absolute inset-0 opacity-0 pointer-events-none w-0 h-0"
+                      required
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="block text-[11px] font-semibold text-slate-300 mb-1">
