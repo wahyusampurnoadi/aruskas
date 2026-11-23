@@ -1,70 +1,100 @@
+"use client";
+
 import { Sparkles, Plus, TrendingUp, Wallet } from "lucide-react";
 
-export default function WalletHeader({ totalBalance, totalWallets, onOpenAddModal }) {
-  return (
-    <div className="relative w-full rounded-3xl bg-slate-900/50 border border-white/10 p-6 sm:p-8 backdrop-blur-2xl shadow-2xl overflow-hidden">
-      <div className="absolute top-0 right-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-0 right-0 w-80 h-80 bg-blue-600/10 rounded-full blur-[100px] pointer-events-none" />
+export default function WalletHeader({ wallets = [], totalBalance = 0, totalWallets = 0, onOpenAddModal, getThemeProps }) {
+  const segments = wallets.map((w) => ({
+    id: w.id,
+    name: w.name,
+    balance: w.balance,
+    bar: getThemeProps(w.type).bar,
+    share: totalBalance > 0 ? (w.balance / totalBalance) * 100 : 0,
+  }));
 
-      <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-semibold mb-3">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Multi-Wallet Management</span>
-          </div>
-          <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
-            Kelola Dompet & Aset
+  return (
+    <section className="glass-strong relative overflow-hidden rounded-[28px] p-6 sm:p-10">
+      <div
+        aria-hidden
+        className="animate-float-a pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-cyan-400/20 blur-3xl"
+      />
+      <div
+        aria-hidden
+        className="animate-float-b pointer-events-none absolute -bottom-24 left-1/4 h-64 w-64 rounded-full bg-indigo-500/15 blur-3xl"
+      />
+
+      <div className="relative flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+        <div className="min-w-0">
+          <span className="chip inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-semibold text-accent">
+            <Sparkles className="h-3.5 w-3.5" />
+            Multi-wallet management
+          </span>
+          <h1 className="mt-4 text-3xl font-black tracking-tight text-main sm:text-4xl">
+            Dompet & aset
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-2 max-w-xl leading-relaxed">
-            Atur dan pantau semua aliran dana dari bank, e-wallet, hingga investasi seperti saham, crypto, dan properti.
+          <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">
+            Pantau bank, e-wallet, hingga investasi seperti saham, crypto, dan properti dalam satu tampilan.
           </p>
         </div>
 
         <button
           onClick={onOpenAddModal}
-          className="inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-sm shadow-[0_0_25px_rgba(6,182,212,0.35)] hover:shadow-[0_0_35px_rgba(6,182,212,0.5)] transition-all duration-300 cursor-pointer active:scale-95 shrink-0"
+          className="btn-primary inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-sm font-semibold"
         >
-          <Plus className="w-4 h-4" />
-          <span>Tambah Dompet</span>
+          <Plus className="h-4 w-4" />
+          Tambah dompet
         </button>
       </div>
 
-      <div className="mt-8 pt-6 border-t border-white/10 grid grid-cols-1 md:grid-cols-2 gap-5">
-        <div className="p-6 rounded-2xl bg-slate-950/40 border border-white/5 backdrop-blur-md relative overflow-hidden group hover:border-cyan-500/30 transition-all duration-300">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
-              Total Seluruh Saldo & Aset
-            </span>
-            <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md">
-              <TrendingUp className="w-3 h-3" />
+      {/* Total & status */}
+      <div className="relative mt-8 grid grid-cols-1 gap-4 md:grid-cols-5">
+        <div className="tile rounded-2xl p-5 md:col-span-3">
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-subtle">Total saldo & aset</p>
+            <span className="chip flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold text-emerald-500">
+              <TrendingUp className="h-3 w-3" />
               Aktif
             </span>
           </div>
-          <p className="text-3xl sm:text-4xl font-black text-white tracking-tight">
+          <p className="mt-3 break-words text-3xl font-black tracking-tight text-main sm:text-4xl">
             Rp {totalBalance.toLocaleString("id-ID")}
           </p>
-          <p className="text-[11px] text-slate-400 mt-2">
-            Akumulasi saldo terhitung dari seluruh dompet & instrumen investasi terhubung.
-          </p>
+
+          {/* Bilah alokasi bertumpuk */}
+          <div className="mt-5">
+            <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-[var(--track)]">
+              {segments.map((s) => (
+                <div
+                  key={s.id}
+                  title={`${s.name}: ${s.share.toFixed(1)}%`}
+                  className={`h-full transition-all duration-700 ${s.bar}`}
+                  style={{ width: `${s.share}%` }}
+                />
+              ))}
+            </div>
+            {segments.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
+                {segments.map((s) => (
+                  <span key={s.id} className="flex items-center gap-1.5 text-[11px] text-subtle">
+                    <span className={`h-2 w-2 rounded-full ${s.bar}`} />
+                    {s.name}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="p-6 rounded-2xl bg-slate-950/40 border border-white/5 backdrop-blur-md flex items-center justify-between group hover:border-cyan-500/30 transition-all duration-300">
+        <div className="tile flex items-center justify-between gap-4 rounded-2xl p-5 md:col-span-2">
           <div>
-            <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
-              Status Alokasi
-            </span>
-            <p className="text-2xl sm:text-3xl font-black text-cyan-400 mt-1 tracking-tight">
-              {totalWallets} Akun / Aset Aktif
-            </p>
-            <p className="text-[11px] text-slate-400 mt-1">
-              Tersedia untuk transaksi harian dan portofolio investasi.
-            </p>
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-subtle">Akun / aset aktif</p>
+            <p className="mt-2 text-3xl font-black tracking-tight text-accent">{totalWallets}</p>
+            <p className="mt-1 text-[11px] text-subtle">Siap untuk transaksi dan portofolio.</p>
           </div>
-          <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 shrink-0 shadow-inner group-hover:scale-105 transition-transform duration-300">
-            <Wallet className="w-7 h-7" />
-          </div>
+          <span className="chip flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-accent">
+            <Wallet className="h-6 w-6" />
+          </span>
         </div>
       </div>
-    </div>
+    </section>
   );
 }

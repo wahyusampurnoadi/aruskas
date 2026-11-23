@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Swal from "sweetalert2";
 import { useAuth } from "@/context/AuthContext";
 import DebtHeader from "@/components/debts/DebtHeader";
@@ -38,13 +38,29 @@ const DEFAULT_DEBTS = [
   },
 ];
 
+const FILTERS = [
+  { key: "all", label: "Semua catatan" },
+  { key: "piutang", label: "Piutang saya" },
+  { key: "hutang", label: "Hutang saya" },
+  { key: "unpaid", label: "Belum lunas" },
+  { key: "paid", label: "Lunas" },
+];
+
+const swalTheme = () => {
+  const isDark = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
+  return {
+    background: isDark ? "#0f172a" : "#ffffff",
+    color: isDark ? "#f1f5f9" : "#0f172a",
+    customClass: { popup: "rounded-3xl" },
+  };
+};
+
 export default function DebtsPage() {
   const { user } = useAuth();
   const [isHydrated, setIsHydrated] = useState(false);
   const [debts, setDebts] = useState([]);
-  const [filterTab, setFilterTab] = useState("all"); // 'all' | 'piutang' | 'hutang' | 'unpaid' | 'paid'
+  const [filterTab, setFilterTab] = useState("all");
 
-  // Modals state
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showPayModal, setShowPayModal] = useState(false);
@@ -83,7 +99,7 @@ export default function DebtsPage() {
     return cleanNumber ? parseInt(cleanNumber, 10) : 0;
   };
 
-  // Load debts from Firestore or localStorage
+  // Muat dari Firestore atau localStorage
   useEffect(() => {
     async function loadData() {
       if (user?.uid) {
@@ -110,14 +126,13 @@ export default function DebtsPage() {
     loadData();
   }, [user]);
 
-  // Sync to localStorage
+  // Sinkron ke localStorage
   useEffect(() => {
     if (isHydrated) {
       localStorage.setItem("aruskas_debts", JSON.stringify(debts));
     }
   }, [debts, isHydrated]);
 
-  // Handlers
   const handleAddSubmit = async (e) => {
     e.preventDefault();
     if (!formData.personName || !formData.amount) return;
@@ -159,16 +174,12 @@ export default function DebtsPage() {
     setShowAddModal(false);
 
     Swal.fire({
+      ...swalTheme(),
       title: "Berhasil!",
       text: "Catatan hutang/piutang berhasil ditambahkan.",
       icon: "success",
       timer: 1500,
       showConfirmButton: false,
-      background: "#0b1329",
-      color: "#ffffff",
-      customClass: {
-        popup: "rounded-3xl border border-white/10 backdrop-blur-2xl shadow-2xl",
-      },
     });
   };
 
@@ -207,39 +218,32 @@ export default function DebtsPage() {
       }
     }
 
-    setDebts(
-      debts.map((d) => (d.id === editData.id ? { ...d, ...payload } : d))
-    );
+    setDebts(debts.map((d) => (d.id === editData.id ? { ...d, ...payload } : d)));
     setShowEditModal(false);
 
     Swal.fire({
+      ...swalTheme(),
       title: "Berhasil!",
       text: "Data hutang/piutang berhasil diperbarui.",
       icon: "success",
       timer: 1500,
       showConfirmButton: false,
-      background: "#0b1329",
-      color: "#ffffff",
-      customClass: {
-        popup: "rounded-3xl border border-white/10 backdrop-blur-2xl shadow-2xl",
-      },
     });
   };
 
   const handleDelete = async (id) => {
     Swal.fire({
-      title: "Hapus Catatan?",
+      ...swalTheme(),
+      title: "Hapus catatan?",
       text: "Data hutang/piutang ini akan dihapus permanen.",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonText: "Ya, Hapus",
+      confirmButtonText: "Ya, hapus",
       cancelButtonText: "Batal",
       confirmButtonColor: "#ef4444",
-      cancelButtonColor: "#1e293b",
-      background: "#0b1329",
-      color: "#ffffff",
+      cancelButtonColor: "#94a3b8",
       customClass: {
-        popup: "rounded-3xl border border-white/10 backdrop-blur-2xl shadow-2xl",
+        popup: "rounded-3xl",
         confirmButton: "rounded-xl font-bold px-5 py-2.5",
         cancelButton: "rounded-xl font-bold px-5 py-2.5",
       },
@@ -271,8 +275,7 @@ export default function DebtsPage() {
   }) => {
     const newPaidAmount = (Number(debtItem.paidAmount) || 0) + amountPaid;
     const totalAmount = Number(debtItem.amount) || 0;
-    const newStatus =
-      newPaidAmount >= totalAmount ? "paid" : "partially_paid";
+    const newStatus = newPaidAmount >= totalAmount ? "paid" : "partially_paid";
 
     const updatePayload = {
       ...debtItem,
@@ -288,11 +291,9 @@ export default function DebtsPage() {
       }
     }
 
-    setDebts(
-      debts.map((d) => (d.id === debtId ? { ...d, ...updatePayload } : d))
-    );
+    setDebts(debts.map((d) => (d.id === debtId ? { ...d, ...updatePayload } : d)));
 
-    // Optionally record kas transaction
+    // Opsional: catat juga ke transaksi kas
     if (recordTransaction && user?.uid) {
       try {
         const isPiutang = debtItem.type === "piutang";
@@ -314,20 +315,15 @@ export default function DebtsPage() {
     setSelectedDebt(null);
 
     Swal.fire({
-      title: "Pembayaran Dicatat!",
+      ...swalTheme(),
+      title: "Pembayaran dicatat!",
       text: `Pembayaran sebesar Rp ${amountPaid.toLocaleString("id-ID")} berhasil disimpan.`,
       icon: "success",
       timer: 2000,
       showConfirmButton: false,
-      background: "#0b1329",
-      color: "#ffffff",
-      customClass: {
-        popup: "rounded-3xl border border-white/10 backdrop-blur-2xl shadow-2xl",
-      },
     });
   };
 
-  // Calculations
   const totalPiutang = debts
     .filter((d) => d.type === "piutang")
     .reduce((sum, d) => sum + Math.max(0, (Number(d.amount) || 0) - (Number(d.paidAmount) || 0)), 0);
@@ -336,56 +332,66 @@ export default function DebtsPage() {
     .filter((d) => d.type === "hutang")
     .reduce((sum, d) => sum + Math.max(0, (Number(d.amount) || 0) - (Number(d.paidAmount) || 0)), 0);
 
-  // Filtered List
-  const filteredDebts = debts.filter((item) => {
-    const total = Number(item.amount) || 0;
-    const paid = Number(item.paidAmount) || 0;
-    const isPaidOff = paid >= total;
+  const isPaidOffItem = (item) => (Number(item.paidAmount) || 0) >= (Number(item.amount) || 0);
 
+  // Jumlah per filter (untuk badge di pill)
+  const counts = useMemo(
+    () => ({
+      all: debts.length,
+      piutang: debts.filter((d) => d.type === "piutang").length,
+      hutang: debts.filter((d) => d.type === "hutang").length,
+      unpaid: debts.filter((d) => !isPaidOffItem(d)).length,
+      paid: debts.filter((d) => isPaidOffItem(d)).length,
+    }),
+    [debts]
+  );
+
+  const filteredDebts = debts.filter((item) => {
     if (filterTab === "piutang") return item.type === "piutang";
     if (filterTab === "hutang") return item.type === "hutang";
-    if (filterTab === "unpaid") return !isPaidOff;
-    if (filterTab === "paid") return isPaidOff;
+    if (filterTab === "unpaid") return !isPaidOffItem(item);
+    if (filterTab === "paid") return isPaidOffItem(item);
     return true;
   });
 
   if (!isHydrated) return null;
 
   return (
-    <div className="w-full space-y-8">
-      {/* Header */}
+    <div className="mx-auto w-full max-w-6xl space-y-6">
       <DebtHeader
         totalPiutang={totalPiutang}
         totalHutang={totalHutang}
         onOpenAddModal={() => setShowAddModal(true)}
       />
 
-      {/* Filter Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-        {[
-          { key: "all", label: "Semua Catatan" },
-          { key: "piutang", label: "Piutang Saya" },
-          { key: "hutang", label: "Hutang Saya" },
-          { key: "unpaid", label: "Belum Lunas" },
-          { key: "paid", label: "Lunas" },
-        ].map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setFilterTab(tab.key)}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-              filterTab === tab.key
-                ? "bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.2)]"
-                : "bg-slate-900/50 border border-white/10 text-slate-400 hover:text-white hover:bg-white/5"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      {/* Filter pill */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {FILTERS.map((tab) => {
+          const active = filterTab === tab.key;
+          return (
+            <button
+              key={tab.key}
+              onClick={() => setFilterTab(tab.key)}
+              className={`inline-flex shrink-0 items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold transition-all ${
+                active ? "btn-primary" : "tile text-muted hover:text-main"
+              }`}
+            >
+              {tab.label}
+              <span
+                className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
+                  active ? "bg-white/20 text-white" : "bg-[var(--glass-hover)] text-subtle"
+                }`}
+              >
+                {counts[tab.key]}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
-      {/* Grid List */}
+      {/* Daftar kartu: tinggi seragam */}
       {filteredDebts.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {filteredDebts.map((debt) => (
             <DebtCard
               key={debt.id}
@@ -397,18 +403,16 @@ export default function DebtsPage() {
           ))}
         </div>
       ) : (
-        <div className="p-12 text-center rounded-3xl bg-slate-900/40 border border-white/5 backdrop-blur-xl">
-          <p className="text-sm text-slate-400 font-medium">
-            Tidak ada catatan hutang/piutang dalam kategori ini.
-          </p>
+        <div className="glass flex flex-col items-center gap-2 rounded-[28px] border-dashed p-12 text-center">
+          <p className="text-base font-bold text-main">Belum ada catatan</p>
+          <p className="text-sm text-subtle">Tidak ada catatan hutang atau piutang pada kategori ini.</p>
         </div>
       )}
 
-      {/* Modals */}
       <DebtModal
         isOpen={showAddModal}
-        title="Tambah Catatan Hutang / Piutang"
-        submitLabel="Simpan Catatan"
+        title="Tambah catatan hutang / piutang"
+        submitLabel="Simpan catatan"
         formData={formData}
         setFormData={setFormData}
         onSubmit={handleAddSubmit}
@@ -418,8 +422,8 @@ export default function DebtsPage() {
 
       <DebtModal
         isOpen={showEditModal}
-        title="Edit Data Hutang / Piutang"
-        submitLabel="Perbarui Catatan"
+        title="Edit data hutang / piutang"
+        submitLabel="Perbarui catatan"
         formData={editData}
         setFormData={setEditData}
         onSubmit={handleEditSubmit}

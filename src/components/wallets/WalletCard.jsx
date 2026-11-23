@@ -1,3 +1,6 @@
+"use client";
+
+import { motion } from "framer-motion";
 import {
   Wallet,
   Pencil,
@@ -14,103 +17,90 @@ import {
 } from "lucide-react";
 
 const renderWalletIcon = (type) => {
+  const cls = "h-5 w-5";
   switch (type) {
-    case "Bank":
-      return <Landmark className="w-5 h-5" />;
-    case "E-Wallet":
-      return <CreditCard className="w-5 h-5" />;
-    case "Cash":
-      return <Banknote className="w-5 h-5" />;
-    case "Saham":
-      return <TrendingUp className="w-5 h-5" />;
-    case "Crypto":
-      return <Bitcoin className="w-5 h-5" />;
-    case "Deposito":
-      return <Lock className="w-5 h-5" />;
-    case "Obligasi":
-      return <FileText className="w-5 h-5" />;
-    case "Reksadana":
-      return <PieChart className="w-5 h-5" />;
-    case "Properti":
-      return <Building2 className="w-5 h-5" />;
-    default:
-      return <Wallet className="w-5 h-5" />;
+    case "Bank": return <Landmark className={cls} />;
+    case "E-Wallet": return <CreditCard className={cls} />;
+    case "Cash": return <Banknote className={cls} />;
+    case "Saham": return <TrendingUp className={cls} />;
+    case "Crypto": return <Bitcoin className={cls} />;
+    case "Deposito": return <Lock className={cls} />;
+    case "Obligasi": return <FileText className={cls} />;
+    case "Reksadana": return <PieChart className={cls} />;
+    case "Properti": return <Building2 className={cls} />;
+    default: return <Wallet className={cls} />;
   }
 };
 
 export default function WalletCard({ wallet, totalBalance, onEdit, onDelete }) {
-  const percentage =
-    totalBalance > 0
-      ? ((wallet.balance / totalBalance) * 100).toFixed(1)
-      : 0;
+  const share = totalBalance > 0 ? (wallet.balance / totalBalance) * 100 : 0;
+  const theme = wallet.theme;
 
   return (
-    <div
-      className={`group relative rounded-3xl bg-slate-900/40 border border-white/10 ${wallet.theme.borderColor} ${wallet.theme.glowColor} p-6 transition-all duration-300 backdrop-blur-xl flex flex-col justify-between shadow-xl overflow-hidden`}
+    <motion.article
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      className="glass group relative flex h-full flex-col overflow-hidden rounded-[28px] p-6 transition duration-300 hover:-translate-y-1"
     >
-      <div>
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-3">
-            <div className={`p-3 rounded-2xl ${wallet.theme.iconBg} border shadow-md`}>
-              {renderWalletIcon(wallet.type)}
-            </div>
-            <div>
-              <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg border ${wallet.theme.badgeBg}`}>
-                {wallet.type}
-              </span>
-            </div>
-          </div>
+      {/* Garis aksen atas */}
+      <div className={`absolute inset-x-0 top-0 h-1 ${theme.accent}`} />
 
-          <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-            <button
-              onClick={() => onEdit(wallet)}
-              className="p-2 rounded-xl bg-slate-800/80 border border-white/10 text-slate-300 hover:text-cyan-400 hover:bg-slate-700 transition-all cursor-pointer"
-              title="Edit Dompet"
-            >
-              <Pencil className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => onDelete(wallet.id)}
-              className="p-2 rounded-xl bg-slate-800/80 border border-white/10 text-slate-300 hover:text-rose-400 hover:bg-slate-700 transition-all cursor-pointer"
-              title="Hapus Dompet"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </button>
-          </div>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${theme.icon}`}>
+            {renderWalletIcon(wallet.type)}
+          </span>
+          <span className={`inline-flex rounded-lg border px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest ${theme.badge}`}>
+            {theme.label}
+          </span>
         </div>
 
-        <h3 className="text-xl font-extrabold text-white group-hover:text-cyan-300 transition-colors">
-          {wallet.name}
-        </h3>
-        <p className="text-xs text-slate-400 font-mono mt-1 tracking-wider">
-          {wallet.accountNumber}
-        </p>
+        {/* Aksi: selalu terlihat */}
+        <div className="flex shrink-0 items-center gap-1.5">
+          <button
+            onClick={() => onEdit(wallet)}
+            title="Edit dompet"
+            aria-label="Edit dompet"
+            className="btn-icon inline-flex h-8 w-8 items-center justify-center rounded-lg"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+          <button
+            onClick={() => onDelete(wallet.id)}
+            title="Hapus dompet"
+            aria-label="Hapus dompet"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-rose-500 transition hover:bg-rose-500/10"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
 
-      <div className="mt-8 pt-5 border-t border-white/5 space-y-4">
-        <div>
-          <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-            Saldo / Nilai Aset
-          </span>
-          <p className="text-2xl font-black text-white mt-1 tracking-tight">
-            Rp {wallet.balance.toLocaleString("id-ID")}
-          </p>
-        </div>
+      <div className="mt-6 min-w-0">
+        <h3 className="truncate text-lg font-bold tracking-tight text-main">{wallet.name}</h3>
+        <p className="mt-1 truncate font-mono text-xs tracking-wider text-subtle">{wallet.accountNumber}</p>
+      </div>
 
-        <div className="space-y-2">
-          <div className="flex justify-between items-center text-[11px] font-semibold">
-            <span className="text-slate-400">Alokasi Portfolio</span>
-            <span className="text-white font-bold">{percentage}%</span>
+      <div className="mt-auto pt-6">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-subtle">Saldo / nilai aset</p>
+        <p className="mt-1.5 break-words text-2xl font-black tracking-tight text-main">
+          Rp {wallet.balance.toLocaleString("id-ID")}
+        </p>
+
+        <div className="mt-5">
+          <div className="mb-2 flex items-center justify-between text-[11px]">
+            <span className="text-subtle">Alokasi portofolio</span>
+            <span className="font-bold text-main">{share.toFixed(1)}%</span>
           </div>
-
-          <div className="w-full h-2.5 bg-slate-950/60 rounded-full overflow-hidden p-0.5 border border-white/5">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--track)]">
             <div
-              className={`h-full rounded-full bg-gradient-to-r ${wallet.theme.barGradient} transition-all duration-500 ease-out`}
-              style={{ width: `${percentage}%` }}
+              className={`h-full rounded-full transition-all duration-700 ease-out ${theme.bar}`}
+              style={{ width: `${Math.min(share, 100)}%` }}
             />
           </div>
         </div>
       </div>
-    </div>
+    </motion.article>
   );
 }

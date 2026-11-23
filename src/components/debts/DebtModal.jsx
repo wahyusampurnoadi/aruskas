@@ -15,163 +15,132 @@ export default function DebtModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
-      <div className="relative w-full max-w-lg rounded-3xl bg-[#0b1329] border border-white/10 p-6 sm:p-8 shadow-2xl overflow-hidden">
-        {/* Modal Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-white/10">
+    <div
+      className="fixed inset-y-0 left-0 right-0 z-[9999] flex items-end justify-center bg-black/40 p-0 backdrop-blur-sm lg:left-[280px] sm:items-center sm:p-4"
+      onClick={onClose}
+    >
+      <div
+        className="glass-strong relative max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-[28px] p-6 [scrollbar-gutter:stable] sm:rounded-[28px] sm:p-8"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-6 flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 flex items-center justify-center font-bold">
-              <HandCoins className="w-5 h-5" />
-            </div>
+            <span className="chip flex h-10 w-10 items-center justify-center rounded-2xl text-accent">
+              <HandCoins className="h-5 w-5" />
+            </span>
             <div>
-              <h2 className="text-lg font-bold text-white">{title}</h2>
-              <p className="text-xs text-slate-400">Pencatatan pinjaman atau hutang baru</p>
+              <h2 className="text-lg font-bold text-main">{title}</h2>
+              <p className="text-xs text-subtle">Pencatatan pinjaman atau hutang</p>
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer"
+            aria-label="Tutup"
+            className="btn-icon inline-flex h-9 w-9 items-center justify-center rounded-xl"
           >
-            <X className="w-5 h-5" />
+            <X className="h-4 w-4" />
           </button>
         </div>
 
-        {/* Modal Form */}
-        <form onSubmit={onSubmit} className="space-y-4 mt-5">
-          {/* Tipe Transaksi */}
+        <form onSubmit={onSubmit} className="space-y-5">
+          {/* Jenis catatan */}
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-              Jenis Catatan
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setFormData({ ...formData, type: "piutang" })}
-                className={`py-2.5 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                  formData.type === "piutang"
-                    ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]"
-                    : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10"
-                }`}
-              >
-                Piutang (Saya Pinjamkan)
-              </button>
-              <button
-                type="button"
-                onClick={() => setFormData({ ...formData, type: "hutang" })}
-                className={`py-2.5 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                  formData.type === "hutang"
-                    ? "bg-rose-500/20 border-rose-500/50 text-rose-400 shadow-[0_0_15px_rgba(244,63,94,0.2)]"
-                    : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10"
-                }`}
-              >
-                Hutang (Saya Utang)
-              </button>
+            <label className="mb-1.5 block text-xs font-semibold text-main">Jenis catatan</label>
+            <div className="tile grid grid-cols-2 gap-1 rounded-2xl p-1">
+              {[
+                { key: "piutang", label: "Piutang (saya pinjamkan)", active: "bg-emerald-500/15 text-emerald-500 border border-emerald-500/30" },
+                { key: "hutang", label: "Hutang (saya utang)", active: "bg-rose-500/15 text-rose-500 border border-rose-500/30" },
+              ].map((opt) => {
+                const active = formData.type === opt.key;
+                return (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, type: opt.key })}
+                    className={`rounded-xl px-3 py-2.5 text-xs font-semibold transition-all ${
+                      active ? opt.active : "text-subtle hover:text-main"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Nama Peminjam / Pemberi Pinjaman */}
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-              Nama Orang / Pihak Terkait
-            </label>
+            <label className="mb-1.5 block text-xs font-semibold text-main">Nama orang / pihak terkait</label>
             <div className="relative">
-              <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <User className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" />
               <input
                 type="text"
                 required
-                placeholder="misal: Budi, Toko Komputer, atau Andi"
+                placeholder="Contoh: Budi, Toko Komputer, atau Andi"
                 value={formData.personName}
-                onChange={(e) =>
-                  setFormData({ ...formData, personName: e.target.value })
-                }
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900/80 border border-white/10 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-500/50"
+                onChange={(e) => setFormData({ ...formData, personName: e.target.value })}
+                className="input-glass w-full rounded-xl py-2.5 pl-10 pr-4 text-sm"
               />
             </div>
           </div>
 
-          {/* Nominal Pinjaman */}
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-              Total Nominal Pinjaman (Rp)
-            </label>
+            <label className="mb-1.5 block text-xs font-semibold text-main">Total nominal pinjaman (Rp)</label>
             <input
               type="text"
+              inputMode="numeric"
               required
               placeholder="0"
               value={formatRupiahInput(formData.amount)}
-              onChange={(e) =>
-                setFormData({ ...formData, amount: e.target.value })
-              }
-              className="w-full px-4 py-2.5 rounded-xl bg-slate-900/80 border border-white/10 text-white placeholder-slate-500 text-sm font-semibold focus:outline-none focus:border-cyan-500/50"
+              onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+              className="input-glass w-full rounded-xl px-4 py-2.5 text-sm font-semibold"
             />
           </div>
 
-          {/* Sudah Terbayar Awal (Opsional) */}
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-              Nominal yang Sudah Terbayar (Awal)
-            </label>
+            <label className="mb-1.5 block text-xs font-semibold text-main">Nominal yang sudah terbayar (awal)</label>
             <input
               type="text"
+              inputMode="numeric"
               placeholder="0 (jika belum pernah dicicil)"
               value={formatRupiahInput(formData.paidAmount)}
-              onChange={(e) =>
-                setFormData({ ...formData, paidAmount: e.target.value })
-              }
-              className="w-full px-4 py-2.5 rounded-xl bg-slate-900/80 border border-white/10 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-500/50"
+              onChange={(e) => setFormData({ ...formData, paidAmount: e.target.value })}
+              className="input-glass w-full rounded-xl px-4 py-2.5 text-sm"
             />
           </div>
 
-          {/* Tanggal Jatuh Tempo */}
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-              Tanggal Jatuh Tempo (Opsional)
-            </label>
+            <label className="mb-1.5 block text-xs font-semibold text-main">Tanggal jatuh tempo (opsional)</label>
             <div className="relative">
-              <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Calendar className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" />
               <input
                 type="date"
                 value={formData.dueDate}
-                onChange={(e) =>
-                  setFormData({ ...formData, dueDate: e.target.value })
-                }
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900/80 border border-white/10 text-white text-sm focus:outline-none focus:border-cyan-500/50"
+                onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                className="input-glass w-full rounded-xl py-2.5 pl-10 pr-4 text-sm"
               />
             </div>
           </div>
 
-          {/* Catatan / Keterangan */}
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-              Catatan / Keterangan
-            </label>
+            <label className="mb-1.5 block text-xs font-semibold text-main">Catatan / keterangan</label>
             <div className="relative">
-              <FileText className="absolute left-3.5 top-3 w-4 h-4 text-slate-400" />
+              <FileText className="pointer-events-none absolute left-3.5 top-3.5 h-4 w-4 text-subtle" />
               <textarea
                 rows={2}
-                placeholder="misal: Pinjam untuk urusan katering event..."
+                placeholder="Contoh: pinjam untuk urusan katering event..."
                 value={formData.notes}
-                onChange={(e) =>
-                  setFormData({ ...formData, notes: e.target.value })
-                }
-                className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-900/80 border border-white/10 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-cyan-500/50"
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                className="input-glass w-full resize-none rounded-xl py-2.5 pl-10 pr-4 text-sm"
               />
             </div>
           </div>
 
-          {/* Submit Actions */}
-          <div className="pt-4 flex items-center justify-end gap-3 border-t border-white/10">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-semibold cursor-pointer"
-            >
+          <div className="grid grid-cols-2 gap-3 pt-2">
+            <button type="button" onClick={onClose} className="btn-ghost rounded-xl py-3 text-sm font-semibold">
               Batal
             </button>
-            <button
-              type="submit"
-              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs shadow-lg cursor-pointer active:scale-95"
-            >
+            <button type="submit" className="btn-primary rounded-xl py-3 text-sm font-semibold">
               {submitLabel}
             </button>
           </div>

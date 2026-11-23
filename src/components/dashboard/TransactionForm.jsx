@@ -1,12 +1,97 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Upload, X, Eye, Sparkles, FileText, Loader2, Lock, Crown, Calendar } from "lucide-react";
+import { Upload, X, Eye, Sparkles, FileText, Loader2, Lock, Crown, Calendar, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { cropAndCompressImage } from "@/lib/utils";
 import { usePro } from "@/app/hooks/usePro";
 import { auth } from "@/lib/firebase";
 
+const INCOME_CATEGORIES = ["Gaji", "Bonus", "Freelance", "Investasi", "Lainnya"];
+const EXPENSE_CATEGORIES = [
+  "Makanan & Minuman",
+  "Transportasi",
+  "Belanja",
+  "Tagihan & Utilitas",
+  "Hiburan",
+  "Kesehatan",
+  "Pendidikan",
+  "Wishlist",
+  "Lainnya",
+];
+
+const EXPENSE_LABEL = { Wishlist: "Target Wishlist" };
+
+// Format YYYY-MM-DD menjadi DD/MM/YYYY untuk tampilan
+const formatDisplayDate = (isoDateStr) => {
+  if (!isoDateStr) return "DD/MM/YYYY";
+  const [year, month, day] = isoDateStr.split("-");
+  return `${day}/${month}/${year}`;
+};
+
+/* ---------- Pilihan segmen (tab & jenis transaksi) ---------- */
+function Segment({ options, value, onChange }) {
+  return (
+    <div className="tile grid grid-cols-2 gap-1 rounded-2xl p-1">
+      {options.map((opt) => {
+        const active = value === opt.key;
+        const Icon = opt.icon;
+        return (
+          <button
+            key={opt.key}
+            type="button"
+            onClick={() => onChange(opt.key)}
+            className={`flex items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-semibold transition-all duration-200 ${
+              active ? opt.activeClass : "text-subtle hover:text-main"
+            }`}
+          >
+            {Icon && <Icon size={14} className="shrink-0" />}
+            <span className="whitespace-nowrap">{opt.label}</span>
+            {opt.badge}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+const PRO_BADGE = (
+  <span className="flex items-center gap-1 rounded-md bg-linear-to-r from-amber-400 to-orange-500 px-1.5 py-0.5 text-[9px] font-extrabold uppercase text-slate-950">
+    <Crown className="h-2.5 w-2.5 fill-slate-950" />
+    PRO
+  </span>
+);
+
+const TAB_OPTIONS = [
+  {
+    key: "scan",
+    label: "Scan struk (AI)",
+    icon: Sparkles,
+    badge: PRO_BADGE,
+    activeClass: "btn-primary shadow-md",
+  },
+  {
+    key: "manual",
+    label: "Form manual",
+    icon: FileText,
+    activeClass: "btn-primary shadow-md",
+  },
+];
+
+const TYPE_OPTIONS = [
+  {
+    key: "income",
+    label: "Pemasukan",
+    activeClass: "bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 shadow-sm",
+  },
+  {
+    key: "expense",
+    label: "Pengeluaran",
+    activeClass: "bg-rose-500/15 text-rose-500 border border-rose-500/30 shadow-sm",
+  },
+];
+
+/* ---------- Form ---------- */
 export default function TransactionForm({
   formRef,
   submit,
@@ -40,26 +125,6 @@ export default function TransactionForm({
   const [scanning, setScanning] = useState(false);
   const hiddenDateInputRef = useRef(null);
   const abortControllerRef = useRef(null);
-
-  const INCOME_CATEGORIES = ["Gaji", "Bonus", "Freelance", "Investasi", "Lainnya"];
-  const EXPENSE_CATEGORIES = [
-    "Makanan & Minuman",
-    "Transportasi",
-    "Belanja",
-    "Tagihan & Utilitas",
-    "Hiburan",
-    "Kesehatan",
-    "Pendidikan",
-    "Wishlist",
-    "Lainnya",
-  ];
-
-  // Helper untuk memformat YYYY-MM-DD menjadi DD/MM/YYYY untuk tampilan UI
-  const formatDisplayDate = (isoDateStr) => {
-    if (!isoDateStr) return "DD/MM/YYYY";
-    const [year, month, day] = isoDateStr.split("-");
-    return `${day}/${month}/${year}`;
-  };
 
   const handleAIScan = async (e) => {
     if (!isPro) {
@@ -135,7 +200,7 @@ export default function TransactionForm({
 
         const validCategories =
           targetType === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
-        
+
         if (aiCategory && validCategories.includes(aiCategory)) {
           setCategory(aiCategory);
         } else {
@@ -169,103 +234,62 @@ export default function TransactionForm({
     setScanning(false);
   };
 
+  const categoryOptions = type === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+
   return (
-    <div className="space-y-4">
-      {/* Switcher Tab Mode */}
-      <div className="grid grid-cols-2 bg-slate-950/80 p-1.5 rounded-xl border border-white/10 gap-1.5">
-        <button
-          type="button"
-          onClick={() => setActiveTab("scan")}
-          className={`px-2 py-2 sm:px-3 sm:py-2.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer ${
-            activeTab === "scan"
-              ? "bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 shadow-md"
-              : "text-slate-400 hover:text-white"
-          }`}
-        >
-          <Sparkles className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-          <span className="whitespace-nowrap text-[11px] sm:text-xs">Scan Struk (AI)</span>
-          <span className="px-1 py-0.5 sm:px-1.5 text-[8px] sm:text-[9px] bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 font-extrabold rounded-md flex items-center gap-0.5 shrink-0 uppercase">
-            <Crown className="w-2.5 h-2.5 fill-slate-950" />
-            PRO
-          </span>
-        </button>
+    <div className="space-y-5">
+      {/* Tab mode */}
+      <Segment options={TAB_OPTIONS} value={activeTab} onChange={setActiveTab} />
 
-        <button
-          type="button"
-          onClick={() => setActiveTab("manual")}
-          className={`px-2 py-2 sm:px-3 sm:py-2.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer ${
-            activeTab === "manual"
-              ? "bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 shadow-md"
-              : "text-slate-400 hover:text-white"
-          }`}
-        >
-          <FileText className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-          <span className="whitespace-nowrap text-[11px] sm:text-xs">Form Manual</span>
-        </button>
-      </div>
-
-      {/* TAB 1: SCAN STRUK VIA AI */}
+      {/* TAB 1: SCAN STRUK AI */}
       {activeTab === "scan" && (
-        <div className="p-6 border border-dashed border-indigo-500/30 rounded-2xl bg-indigo-950/10 flex flex-col items-center justify-center text-center space-y-3 transition-all min-h-[220px] relative overflow-hidden">
+        <div className="tile flex min-h-[300px] flex-col items-center justify-center rounded-2xl border-dashed p-6 text-center">
           {!isPro ? (
-            <div className="flex flex-col items-center justify-center space-y-3 py-2">
-              <div className="p-3 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                <Lock className="w-6 h-6" />
-              </div>
-              <div className="space-y-1">
-                <h4 className="text-xs font-bold text-white flex items-center justify-center gap-1">
-                  Fitur Eksklusif ArusKas PRO
-                </h4>
-                <p className="text-[10px] text-slate-400 max-w-[260px]">
-                  Otomatis catat transaksi cukup dengan unggah foto struk belanja atau resi transfer.
+            <div className="flex flex-col items-center gap-4">
+              <span className="chip flex h-14 w-14 items-center justify-center rounded-2xl text-amber-500">
+                <Lock className="h-6 w-6" />
+              </span>
+              <div className="space-y-1.5">
+                <p className="text-sm font-bold text-main">Fitur eksklusif ArusKas PRO</p>
+                <p className="mx-auto max-w-[280px] text-xs leading-relaxed text-subtle">
+                  Otomatis catat transaksi cukup dengan mengunggah foto struk belanja atau resi transfer.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={onUpgradeClick}
-                className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold text-xs shadow-lg shadow-amber-500/20 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
+                className="inline-flex items-center gap-2 rounded-xl bg-linear-to-r from-amber-500 to-orange-500 px-5 py-2.5 text-xs font-extrabold text-slate-950 shadow-lg shadow-amber-500/20 transition active:scale-95"
               >
-                <Crown className="w-3.5 h-3.5 fill-slate-950" />
-                <span>Upgrade Ke Pro</span>
+                <Crown className="h-3.5 w-3.5 fill-slate-950" />
+                Upgrade ke Pro
               </button>
             </div>
           ) : scanning ? (
-            <div className="flex flex-col items-center gap-2 py-4">
-              <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
-              <p className="text-xs font-semibold text-indigo-200">
-                AI sedang membaca struk... (estimasi 10-20 detik)
-              </p>
-              <p className="text-[10px] text-slate-400">
-                Mengekstrak nominal, tanggal, & keterangan
-              </p>
+            <div className="flex flex-col items-center gap-3">
+              <Loader2 className="h-8 w-8 animate-spin text-accent" />
+              <p className="text-sm font-semibold text-main">AI sedang membaca struk...</p>
+              <p className="text-xs text-subtle">Estimasi 10–20 detik. Mengekstrak nominal, tanggal, dan keterangan.</p>
               <button
                 type="button"
                 onClick={handleCancelScan}
-                className="mt-2 text-[11px] text-rose-400 hover:underline cursor-pointer"
+                className="mt-1 text-xs font-semibold text-rose-500 hover:underline"
               >
-                Batal
+                Batalkan
               </button>
             </div>
           ) : (
-            <label className="flex flex-col items-center justify-center cursor-pointer w-full h-full">
-              <div className="p-3 rounded-full bg-indigo-500/20 text-indigo-400 mb-2 border border-indigo-500/30">
-                <Upload className="w-6 h-6" />
+            <label className="flex w-full cursor-pointer flex-col items-center gap-3">
+              <span className="chip flex h-14 w-14 items-center justify-center rounded-2xl text-accent">
+                <Upload className="h-6 w-6" />
+              </span>
+              <div className="space-y-1">
+                <p className="text-sm font-bold text-main">Unggah struk atau screenshot transfer</p>
+                <p className="text-xs text-subtle">Format JPG atau PNG, maksimal 10 MB, dikompres otomatis.</p>
               </div>
-              <span className="text-xs font-bold text-white mb-0.5">
-                Upload Struk / Screenshot Transfer
+              <span className="btn-primary mt-1 inline-flex items-center rounded-xl px-4 py-2 text-xs font-semibold">
+                Pilih foto
               </span>
-              <span className="text-[10px] text-slate-400 mb-3">
-                Format JPG, PNG (Max 10MB, dikompres otomatis)
-              </span>
-              <span className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-semibold transition-all shadow-md">
-                Pilih Foto
-              </span>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleAIScan}
-                className="hidden"
-              />
+              <input type="file" accept="image/*" onChange={handleAIScan} className="hidden" />
             </label>
           )}
         </div>
@@ -273,134 +297,89 @@ export default function TransactionForm({
 
       {/* TAB 2: FORM MANUAL */}
       {activeTab === "manual" && (
-        <form ref={formRef} onSubmit={submit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-2 p-1 bg-slate-950/60 rounded-xl border border-white/10">
-            <button
-              type="button"
-              onClick={() => {
-                setType("income");
-                setCategory("");
-              }}
-              className={`py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                type === "income"
-                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-md"
-                  : "text-slate-400 hover:text-white"
-              }`}
-            >
-              Pemasukan
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setType("expense");
-                setCategory("");
-              }}
-              className={`py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                type === "expense"
-                  ? "bg-rose-500/20 text-rose-400 border border-rose-500/30 shadow-md"
-                  : "text-slate-400 hover:text-white"
-              }`}
-            >
-              Pengeluaran
-            </button>
-          </div>
+        <form ref={formRef} onSubmit={submit} className="space-y-5">
+          <Segment
+            options={TYPE_OPTIONS}
+            value={type}
+            onChange={(next) => {
+              setType(next);
+              setCategory("");
+            }}
+          />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            {/* Kolom kiri: data */}
+            <div className="flex flex-col gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                    Tanggal
-                  </label>
-                  {/* Tampilan Kustom DD/MM/YYYY */}
+                  <label className="mb-1.5 block text-xs font-semibold text-main">Tanggal</label>
                   <div className="relative">
                     <button
                       type="button"
                       onClick={() => hiddenDateInputRef.current?.showPicker?.() || hiddenDateInputRef.current?.click()}
-                      className="w-full px-3 py-2 bg-slate-950/60 border border-white/10 rounded-xl text-white text-xs text-left focus:outline-none focus:border-indigo-500 transition-colors cursor-pointer flex items-center justify-between"
+                      className="input-glass flex w-full cursor-pointer items-center justify-between rounded-xl px-3.5 py-2.5 text-left text-sm"
                     >
                       <span>{formatDisplayDate(transactionDate)}</span>
-                      <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                      <Calendar className="h-3.5 w-3.5 text-subtle" />
                     </button>
-                    {/* Input Date Tersembunyi */}
                     <input
                       ref={hiddenDateInputRef}
                       type="date"
                       value={transactionDate}
                       onChange={(e) => setTransactionDate(e.target.value)}
-                      className="absolute inset-0 opacity-0 pointer-events-none w-0 h-0"
+                      className="pointer-events-none absolute inset-0 h-0 w-0 opacity-0"
                       required
                     />
                   </div>
                 </div>
+
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                    Nominal (Rp)
-                  </label>
+                  <label className="mb-1.5 block text-xs font-semibold text-main">Nominal (Rp)</label>
                   <input
                     type="text"
+                    inputMode="numeric"
                     value={amount}
                     onChange={handleAmountChange}
                     placeholder="0"
-                    className="w-full px-3 py-2 bg-slate-950/60 border border-white/10 rounded-xl text-white text-xs font-semibold focus:outline-none focus:border-indigo-500 transition-colors"
+                    className="input-glass w-full rounded-xl px-3.5 py-2.5 text-sm font-semibold"
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                  Kategori
-                </label>
+                <label className="mb-1.5 block text-xs font-semibold text-main">Kategori</label>
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-950/60 border border-white/10 rounded-xl text-white text-xs focus:outline-none focus:border-indigo-500 transition-colors cursor-pointer"
+                  className="input-glass w-full cursor-pointer rounded-xl px-3.5 py-2.5 text-sm"
                   required
                 >
-                  <option value="" disabled className="bg-slate-900 text-slate-400">
-                    -- Pilih Kategori --
+                  <option value="" disabled>
+                    -- Pilih kategori --
                   </option>
-                  {type === "income" ? (
-                    <>
-                      <option value="Gaji" className="bg-slate-900 text-white">Gaji</option>
-                      <option value="Bonus" className="bg-slate-900 text-white">Bonus</option>
-                      <option value="Freelance" className="bg-slate-900 text-white">Freelance</option>
-                      <option value="Investasi" className="bg-slate-900 text-white">Investasi</option>
-                      <option value="Lainnya" className="bg-slate-900 text-white">Lainnya</option>
-                    </>
-                  ) : (
-                    <>
-                      <option value="Makanan & Minuman" className="bg-slate-900 text-white">Makanan & Minuman</option>
-                      <option value="Transportasi" className="bg-slate-900 text-white">Transportasi</option>
-                      <option value="Belanja" className="bg-slate-900 text-white">Belanja</option>
-                      <option value="Tagihan & Utilitas" className="bg-slate-900 text-white">Tagihan & Utilitas</option>
-                      <option value="Hiburan" className="bg-slate-900 text-white">Hiburan</option>
-                      <option value="Kesehatan" className="bg-slate-900 text-white">Kesehatan</option>
-                      <option value="Pendidikan" className="bg-slate-900 text-white">Pendidikan</option>
-                      <option value="Wishlist" className="bg-slate-900 text-white">Target Wishlist</option>
-                      <option value="Lainnya" className="bg-slate-900 text-white">Lainnya</option>
-                    </>
-                  )}
+                  {categoryOptions.map((c) => (
+                    <option key={c} value={c}>
+                      {type === "expense" ? EXPENSE_LABEL[c] || c : c}
+                    </option>
+                  ))}
                 </select>
               </div>
 
               {type === "expense" && category === "Wishlist" && (
                 <div>
-                  <label className="block text-[11px] font-semibold text-amber-400 mb-1">
-                    Target Wishlist
-                  </label>
+                  <label className="mb-1.5 block text-xs font-semibold text-amber-500">Target wishlist</label>
                   <select
                     value={selectedGoalId}
                     onChange={(e) => setSelectedGoalId(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-950/60 border border-amber-500/30 rounded-xl text-white text-xs focus:outline-none focus:border-amber-400 transition-colors cursor-pointer"
+                    className="input-glass w-full cursor-pointer rounded-xl border-amber-500/30 px-3.5 py-2.5 text-sm"
                     required
                   >
-                    <option value="" disabled className="bg-slate-900 text-slate-400">
-                      -- Pilih Goal Wishlist --
+                    <option value="" disabled>
+                      -- Pilih goal wishlist --
                     </option>
                     {goals.map((goal) => (
-                      <option key={goal.id} value={goal.id} className="bg-slate-900 text-white">
+                      <option key={goal.id} value={goal.id}>
                         {goal.name}
                       </option>
                     ))}
@@ -408,79 +387,73 @@ export default function TransactionForm({
                 </div>
               )}
 
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                  Catatan / Keterangan
-                </label>
+              <div className="flex flex-1 flex-col">
+                <label className="mb-1.5 block text-xs font-semibold text-main">Catatan / keterangan</label>
                 <textarea
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
-                  placeholder="Catatan transaksi..."
-                  rows={2}
-                  className="w-full px-3 py-2 bg-slate-950/60 border border-white/10 rounded-xl text-white text-xs focus:outline-none focus:border-indigo-500 transition-colors resize-none"
+                  placeholder="Tulis catatan transaksi..."
+                  rows={3}
+                  className="input-glass w-full flex-1 resize-none rounded-xl px-3.5 py-2.5 text-sm"
                 />
               </div>
             </div>
 
-            <div className="space-y-3 flex flex-col justify-between h-full">
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                  Bukti Transaksi (Opsional)
-                </label>
+            {/* Kolom kanan: bukti */}
+            <div className="flex flex-col">
+              <label className="mb-1.5 block text-xs font-semibold text-main">Bukti transaksi (opsional)</label>
 
-                {imagePreview ? (
-                  <div className="relative group w-full h-[152px] rounded-xl overflow-hidden border border-white/10 bg-slate-950 flex items-center justify-center">
-                    <img
-                      src={imagePreview}
-                      alt="Preview"
-                      className="max-h-full max-w-full object-contain p-2 cursor-pointer transition-transform duration-300 group-hover:scale-105"
-                      onClick={() => onPreviewClick && onPreviewClick(imagePreview)}
-                    />
-                    <div 
-                      onClick={() => onPreviewClick && onPreviewClick(imagePreview)}
-                      className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer pointer-events-none group-hover:pointer-events-auto"
-                    >
-                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900/80 border border-white/20 text-white text-xs backdrop-blur-sm">
-                        <Eye className="w-3.5 h-3.5" />
-                        <span>Lihat Full</span>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setImageFile(null);
-                        setImagePreview("");
-                      }}
-                      className="absolute top-2 right-2 z-10 p-1.5 bg-red-600/80 hover:bg-red-600 text-white rounded-lg transition-colors cursor-pointer shadow-md"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
+              {imagePreview ? (
+                <div className="group relative flex min-h-[200px] flex-1 items-center justify-center overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--glass-hover)]">
+                  <img
+                    src={imagePreview}
+                    alt="Pratinjau bukti"
+                    className="max-h-full max-w-full cursor-pointer object-contain p-3 transition duration-300 group-hover:scale-[1.02]"
+                    onClick={() => onPreviewClick && onPreviewClick(imagePreview)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => onPreviewClick && onPreviewClick(imagePreview)}
+                    className="btn-ghost absolute bottom-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-semibold"
+                  >
+                    <Eye className="h-3.5 w-3.5" />
+                    Lihat penuh
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Hapus bukti"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setImageFile(null);
+                      setImagePreview("");
+                    }}
+                    className="absolute right-2.5 top-2.5 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-rose-500 text-white shadow-md transition hover:bg-rose-600"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <label className="tile flex min-h-[200px] flex-1 cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-dashed p-5 text-center transition hover:border-accent">
+                  <span className="chip flex h-12 w-12 items-center justify-center rounded-2xl text-accent">
+                    <ImageIcon className="h-5 w-5" />
+                  </span>
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-main">Unggah struk atau bukti</p>
+                    <p className="text-[11px] text-subtle">Format PNG atau JPG, maksimal 2 MB</p>
                   </div>
-                ) : (
-                  <label className="flex flex-col items-center justify-center gap-2 w-full h-[152px] border border-dashed border-white/20 hover:border-indigo-500/50 rounded-xl bg-slate-950/40 hover:bg-slate-950/70 transition-all cursor-pointer text-slate-400 hover:text-white p-4 text-center">
-                    <Upload className="w-5 h-5 text-indigo-400" />
-                    <span className="text-xs font-medium">Unggah Struk / Bukti</span>
-                    <span className="text-[10px] text-slate-500">Format PNG, JPG (Max 2MB)</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileUpload}
-                      className="hidden"
-                    />
-                  </label>
-                )}
-              </div>
-
-              <button
-                type="submit"
-                disabled={uploading}
-                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 font-bold text-xs text-white shadow-lg shadow-indigo-500/20 transition-all cursor-pointer disabled:opacity-50 active:scale-[0.99] mt-auto"
-              >
-                {uploading ? "Menyimpan..." : editingId ? "Perbarui Transaksi" : "Simpan Transaksi"}
-              </button>
+                  <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+                </label>
+              )}
             </div>
           </div>
+
+          <button
+            type="submit"
+            disabled={uploading}
+            className="btn-primary w-full rounded-xl py-3 text-sm font-semibold"
+          >
+            {uploading ? "Menyimpan..." : editingId ? "Perbarui transaksi" : "Simpan transaksi"}
+          </button>
         </form>
       )}
     </div>

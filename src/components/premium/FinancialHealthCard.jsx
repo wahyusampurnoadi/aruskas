@@ -1,24 +1,26 @@
 "use client";
 
 import { useMemo } from "react";
-import { 
-  Activity, 
-  Lock, 
-  Sparkles, 
-  ShieldCheck, 
-  AlertTriangle, 
-  CheckCircle2, 
+import {
+  Activity,
+  Lock,
+  Sparkles,
+  ShieldCheck,
+  AlertTriangle,
+  CheckCircle2,
   HelpCircle,
-  FileQuestion
+  FileQuestion,
 } from "lucide-react";
 import { usePro } from "@/app/hooks/usePro";
 
-export default function FinancialHealthCard({ 
-  income = 0, 
-  expense = 0, 
-  totalSavings = 0, 
+const BAR_TRACK = "relative h-2.5 w-full overflow-hidden rounded-full bg-[var(--track)]";
+
+export default function FinancialHealthCard({
+  income = 0,
+  expense = 0,
+  totalSavings = 0,
   monthlyDebt = 0,
-  onUpgrade 
+  onUpgrade,
 }) {
   const { isPro } = usePro();
 
@@ -32,18 +34,14 @@ export default function FinancialHealthCard({
         debtRatio: "-",
         emergencyMonths: "-",
         score: "-",
-        status: { 
-          label: "Belum Ada Transaksi", 
-          color: "text-slate-400", 
-          bg: "bg-slate-800/50", 
-          border: "border-slate-700" 
-        }
+        status: { label: "Belum ada transaksi", color: "text-subtle", bg: "" },
       };
     }
 
     const rawSavingsRatio = ((income - expense) / income) * 100;
     const rawDebtRatio = (monthlyDebt / income) * 100;
-    const rawEmergencyMonths = expense > 0 ? totalSavings / expense : totalSavings > 0 ? 6 : 0;
+    const rawEmergencyMonths =
+      expense > 0 ? totalSavings / expense : totalSavings > 0 ? 6 : 0;
 
     let score = 0;
     if (rawSavingsRatio >= 20) score += 40;
@@ -57,162 +55,215 @@ export default function FinancialHealthCard({
 
     const finalScore = Math.min(100, Math.max(0, Math.round(score)));
 
-    let status = { label: "Kritis", color: "text-rose-400", bg: "bg-rose-500/10", border: "border-rose-500/30" };
+    let status = { label: "Kritis", color: "text-rose-500", bg: "bg-rose-500/10" };
     if (finalScore >= 80) {
-      status = { label: "Sangat Sehat", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/30" };
+      status = { label: "Sangat sehat", color: "text-emerald-500", bg: "bg-emerald-500/10" };
     } else if (finalScore >= 60) {
-      status = { label: "Cukup Sehat", color: "text-cyan-400", bg: "bg-cyan-500/10", border: "border-cyan-500/30" };
+      status = { label: "Cukup sehat", color: "text-accent", bg: "bg-accent/10" };
     } else if (finalScore >= 40) {
-      status = { label: "Perlu Perhatian", color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/30" };
+      status = { label: "Perlu perhatian", color: "text-amber-500", bg: "bg-amber-500/10" };
     }
 
-    const getBipolarBarProps = (value, maxScale = 50) => {
+    // Bar dua arah: nilai positif ke kanan, negatif ke kiri dari tengah
+    const bipolar = (value, maxScale) => {
       if (value === 0) return { left: "50%", width: "0%" };
-      const percentage = Math.min(50, (Math.abs(value) / maxScale) * 50);
-      return value > 0 
-        ? { left: "50%", width: `${percentage}%` } 
-        : { left: `${50 - percentage}%`, width: `${percentage}%` };
+      const pct = Math.min(50, (Math.abs(value) / maxScale) * 50);
+      return value > 0
+        ? { left: "50%", width: `${pct}%` }
+        : { left: `${50 - pct}%`, width: `${pct}%` };
     };
 
     return {
       hasData: true,
       savingsRatio: `${rawSavingsRatio.toFixed(1)}%`,
       debtRatio: `${rawDebtRatio.toFixed(1)}%`,
-      emergencyMonths: `${rawEmergencyMonths.toFixed(1)} Bulan`,
+      emergencyMonths: `${rawEmergencyMonths.toFixed(1)} bln`,
       rawSavingsRatio,
       rawDebtRatio,
       rawEmergencyMonths,
-      savingsStyle: getBipolarBarProps(rawSavingsRatio, 50),
+      savingsStyle: bipolar(rawSavingsRatio, 50),
       debtStyle: { left: "0%", width: `${Math.min(100, rawDebtRatio)}%` },
-      emergencyStyle: getBipolarBarProps(rawEmergencyMonths, 6),
+      emergencyStyle: bipolar(rawEmergencyMonths, 6),
       score: finalScore,
-      status
+      status,
     };
   }, [income, expense, totalSavings, monthlyDebt]);
 
-  return (
-    <div className="relative rounded-3xl bg-slate-900/60 border border-white/10 p-6 sm:p-8 backdrop-blur-xl shadow-2xl overflow-hidden">
-      <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+  const savingsTone = !metrics.hasData
+    ? "text-subtle"
+    : metrics.rawSavingsRatio < 0
+    ? "text-rose-500"
+    : metrics.rawSavingsRatio >= 20
+    ? "text-emerald-500"
+    : "text-amber-500";
 
-      <div className="flex items-center justify-between pb-6 border-b border-white/10 relative z-10">
+  const debtTone = !metrics.hasData
+    ? "text-subtle"
+    : metrics.rawDebtRatio <= 30
+    ? "text-emerald-500"
+    : "text-rose-500";
+
+  const emergencyTone = !metrics.hasData
+    ? "text-subtle"
+    : metrics.rawEmergencyMonths >= 3
+    ? "text-emerald-500"
+    : "text-amber-500";
+
+  const insight = !metrics.hasData
+    ? {
+        icon: FileQuestion,
+        tone: "text-subtle",
+        text: "Belum ada transaksi pada periode ini. Catat pemasukan dan pengeluaran untuk melihat analisis skor kesehatan.",
+      }
+    : metrics.score >= 70
+    ? {
+        icon: CheckCircle2,
+        tone: "text-emerald-500",
+        text:
+          metrics.score >= 80
+            ? "Keuangan Anda sangat sehat. Alokasikan surplus ke investasi jangka panjang."
+            : "Kondisi stabil. Kurangi pengeluaran sekunder agar rasio tabungan mendekati 20%.",
+      }
+    : {
+        icon: AlertTriangle,
+        tone: "text-amber-500",
+        text: "Beban utang atau alokasi tabungan berada di luar batas aman. Prioritaskan pelunasan utang berbunga tinggi.",
+      };
+
+  const InsightIcon = insight.icon;
+
+  return (
+    <div className="glass relative flex h-full flex-col overflow-hidden rounded-3xl p-6">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-2xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shadow-[0_0_15px_rgba(6,182,212,0.15)]">
-            <Activity size={20} />
+          <div className="chip flex h-10 w-10 items-center justify-center rounded-xl text-accent">
+            <Activity size={18} />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-lg font-bold text-white tracking-wide">Smart Financial Health Score</h2>
-              <span className="px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 text-[10px] font-black uppercase tracking-wider shadow-md">
-                PRO
+              <h2 className="text-base font-bold text-main">Financial health</h2>
+              <span className="rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-slate-900">
+                Pro
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">Analisis otomatis indikator dan rasio kesehatan keuangan Anda</p>
+            <p className="mt-0.5 text-xs text-subtle">Rasio kesehatan keuangan Anda</p>
           </div>
         </div>
       </div>
 
-      <div className="relative mt-6">
+      <div className="relative mt-6 flex flex-1 flex-col">
+        {/* Overlay untuk non-Pro */}
         {!isPro && (
-          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-6 rounded-2xl bg-slate-950/80 backdrop-blur-md border border-white/10 text-center">
-            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-amber-400/20 to-orange-500/20 text-amber-400 border border-amber-500/30 mb-3 shadow-[0_0_20px_rgba(245,158,11,0.2)]">
-              <Lock size={24} />
+          <div className="glass-strong absolute inset-0 z-20 flex flex-col items-center justify-center rounded-2xl p-6 text-center">
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-400/20 text-amber-500">
+              <Lock size={22} />
             </div>
-            <h3 className="text-base font-bold text-white mb-1">Fitur Ini Khusus Akun Pro</h3>
-            <p className="text-xs text-slate-400 max-w-sm mb-5 leading-relaxed">
-              Buka analisis rasio tabungan, tingkat beban utang, dan rekomendasi otomatis untuk menjaga stabilitas keuangan Anda.
+            <h3 className="mb-1 text-base font-bold text-main">Fitur khusus akun Pro</h3>
+            <p className="mb-5 max-w-sm text-xs leading-relaxed text-muted">
+              Buka analisis rasio tabungan, beban utang, dan rekomendasi otomatis untuk menjaga stabilitas keuangan.
             </p>
             <button
               onClick={onUpgrade}
-              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 via-orange-500 to-amber-500 hover:from-amber-300 hover:to-orange-400 text-slate-950 text-xs font-black tracking-wide shadow-[0_0_20px_rgba(245,158,11,0.4)] transition-all active:scale-95 flex items-center gap-2 cursor-pointer"
+              className="btn-primary inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-bold"
             >
               <Sparkles size={14} />
-              <span>Upgrade ke Pro Sekarang</span>
+              Upgrade ke Pro
             </button>
           </div>
         )}
 
-        <div className={`grid grid-cols-1 lg:grid-cols-12 gap-6 ${!isPro ? "filter blur-sm select-none pointer-events-none" : ""}`}>
-          <div className="lg:col-span-5 flex flex-col items-center justify-center p-6 rounded-2xl bg-slate-950/60 border border-white/5 text-center relative overflow-hidden">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Skor Kesehatan</span>
-            
-            <div className="relative flex items-center justify-center my-2">
-              <div className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-cyan-400 to-blue-400 tracking-tight">
+        <div
+          className={`grid flex-1 grid-cols-1 gap-5 sm:grid-cols-12 ${
+            !isPro ? "pointer-events-none select-none blur-sm" : ""
+          }`}
+        >
+          {/* Skor */}
+          <div className="tile flex flex-col items-center justify-center rounded-2xl p-6 text-center sm:col-span-5">
+            <span className="text-[11px] font-semibold uppercase tracking-widest text-subtle">
+              Skor kesehatan
+            </span>
+            <div className="my-3 flex items-baseline gap-1">
+              <span className="text-5xl font-black tracking-tight text-gradient">
                 {metrics.score}
-              </div>
-              {metrics.hasData && <span className="text-sm font-bold text-slate-500 ml-1">/100</span>}
+              </span>
+              {metrics.hasData && <span className="text-sm font-bold text-subtle">/100</span>}
             </div>
-
-            <div className={`mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${metrics.status.bg} ${metrics.status.color} ${metrics.status.border}`}>
-              {metrics.hasData ? <ShieldCheck size={14} /> : <FileQuestion size={14} />}
-              <span>{metrics.status.label}</span>
-            </div>
+            <span
+              className={`chip inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ${metrics.status.color}`}
+            >
+              {metrics.hasData ? <ShieldCheck size={13} /> : <FileQuestion size={13} />}
+              {metrics.status.label}
+            </span>
           </div>
 
-          <div className="lg:col-span-7 space-y-4 flex flex-col justify-between">
-            <div className="p-4 rounded-2xl bg-slate-950/40 border border-white/5 space-y-2">
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-slate-300 font-semibold flex items-center gap-1.5">
-                  Rasio Tabungan
-                  <HelpCircle size={12} className="text-slate-500" />
+          {/* Metrik */}
+          <div className="flex flex-col gap-3 sm:col-span-7">
+            <div className="tile rounded-2xl p-4">
+              <div className="mb-2.5 flex items-center justify-between text-xs">
+                <span className="flex items-center gap-1.5 font-semibold text-main">
+                  Rasio tabungan
+                  <HelpCircle size={12} className="text-subtle" />
                 </span>
-                <span className={`font-bold ${!metrics.hasData ? "text-slate-400" : metrics.rawSavingsRatio < 0 ? "text-rose-400" : metrics.rawSavingsRatio >= 20 ? "text-emerald-400" : "text-amber-400"}`}>
-                  {metrics.savingsRatio} <span className="text-slate-500 font-normal">(Ideal ≥ 20%)</span>
+                <span className={`font-bold ${savingsTone}`}>
+                  {metrics.savingsRatio}{" "}
+                  <span className="font-normal text-subtle">(ideal ≥ 20%)</span>
                 </span>
               </div>
-              <div className="relative w-full h-2.5 rounded-full bg-slate-800/80 overflow-hidden">
-                <div className="absolute left-1/2 top-0 bottom-0 w-[2px] bg-slate-600/60 z-10" />
+              <div className={BAR_TRACK}>
+                <div className="absolute left-1/2 top-0 bottom-0 z-10 w-px bg-[var(--text-subtle)]" />
                 {metrics.hasData && (
-                  <div 
-                    className={`absolute h-full transition-all duration-500 rounded-full ${
-                      metrics.rawSavingsRatio < 0 
-                        ? "bg-gradient-to-l from-rose-500 to-rose-600" 
-                        : "bg-gradient-to-r from-cyan-400 to-emerald-400"
-                    }`} 
+                  <div
+                    className={`absolute h-full rounded-full transition-all duration-500 ${
+                      metrics.rawSavingsRatio < 0 ? "bg-rose-500" : "bg-emerald-500"
+                    }`}
                     style={metrics.savingsStyle}
                   />
                 )}
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-950/40 border border-white/5 space-y-2">
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-slate-300 font-semibold flex items-center gap-1.5">
-                  Rasio Beban Utang (DTI)
-                  <HelpCircle size={12} className="text-slate-500" />
+            <div className="tile rounded-2xl p-4">
+              <div className="mb-2.5 flex items-center justify-between text-xs">
+                <span className="flex items-center gap-1.5 font-semibold text-main">
+                  Rasio beban utang
+                  <HelpCircle size={12} className="text-subtle" />
                 </span>
-                <span className={`font-bold ${!metrics.hasData ? "text-slate-400" : metrics.rawDebtRatio <= 30 ? "text-emerald-400" : "text-rose-400"}`}>
-                  {metrics.debtRatio} <span className="text-slate-500 font-normal">(Ideal ≤ 30%)</span>
+                <span className={`font-bold ${debtTone}`}>
+                  {metrics.debtRatio}{" "}
+                  <span className="font-normal text-subtle">(ideal ≤ 30%)</span>
                 </span>
               </div>
-              <div className="relative w-full h-2.5 rounded-full bg-slate-800/80 overflow-hidden">
+              <div className={BAR_TRACK}>
                 {metrics.hasData && (
-                  <div 
-                    className={`absolute h-full transition-all duration-500 rounded-full ${metrics.rawDebtRatio <= 30 ? "bg-emerald-400" : "bg-rose-500"}`} 
+                  <div
+                    className={`absolute h-full rounded-full transition-all duration-500 ${
+                      metrics.rawDebtRatio <= 30 ? "bg-emerald-500" : "bg-rose-500"
+                    }`}
                     style={metrics.debtStyle}
                   />
                 )}
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-950/40 border border-white/5 space-y-2">
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-slate-300 font-semibold flex items-center gap-1.5">
-                  Ketahanan Dana Darurat
-                  <HelpCircle size={12} className="text-slate-500" />
+            <div className="tile rounded-2xl p-4">
+              <div className="mb-2.5 flex items-center justify-between text-xs">
+                <span className="flex items-center gap-1.5 font-semibold text-main">
+                  Dana darurat
+                  <HelpCircle size={12} className="text-subtle" />
                 </span>
-                <span className={`font-bold ${!metrics.hasData ? "text-slate-400" : metrics.rawEmergencyMonths < 0 ? "text-rose-400" : metrics.rawEmergencyMonths >= 3 ? "text-emerald-400" : "text-amber-400"}`}>
-                  {metrics.emergencyMonths} <span className="text-slate-500 font-normal">(Ideal ≥ 3 - 6 Bln)</span>
+                <span className={`font-bold ${emergencyTone}`}>
+                  {metrics.emergencyMonths}{" "}
+                  <span className="font-normal text-subtle">(ideal ≥ 3–6 bln)</span>
                 </span>
               </div>
-              <div className="relative w-full h-2.5 rounded-full bg-slate-800/80 overflow-hidden">
-                <div className="absolute left-1/2 top-0 bottom-0 w-[2px] bg-slate-600/60 z-10" />
+              <div className={BAR_TRACK}>
+                <div className="absolute left-1/2 top-0 bottom-0 z-10 w-px bg-[var(--text-subtle)]" />
                 {metrics.hasData && (
-                  <div 
-                    className={`absolute h-full transition-all duration-500 rounded-full ${
-                      metrics.rawEmergencyMonths < 0 
-                        ? "bg-gradient-to-l from-rose-500 to-rose-600" 
-                        : "bg-gradient-to-r from-indigo-400 to-purple-500"
-                    }`} 
+                  <div
+                    className={`absolute h-full rounded-full transition-all duration-500 ${
+                      metrics.rawEmergencyMonths < 0 ? "bg-rose-500" : "bg-accent"
+                    }`}
                     style={metrics.emergencyStyle}
                   />
                 )}
@@ -221,32 +272,11 @@ export default function FinancialHealthCard({
           </div>
         </div>
 
+        {/* Insight */}
         {isPro && (
-          <div className="mt-5 p-4 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-xs flex items-start gap-3">
-            {!metrics.hasData ? (
-              <>
-                <FileQuestion size={18} className="shrink-0 text-slate-400 mt-0.5" />
-                <span className="leading-relaxed text-slate-400">
-                  Belum ada transaksi yang dicatat pada bulan ini. Silakan catat pemasukan dan pengeluaran Anda untuk melihat analisis skor kesehatan keuangan.
-                </span>
-              </>
-            ) : metrics.score >= 70 ? (
-              <>
-                <CheckCircle2 size={18} className="shrink-0 text-cyan-400 mt-0.5" />
-                <span className="leading-relaxed">
-                  {metrics.score >= 80
-                    ? "Keuangan Anda dalam kondisi sangat sehat! Alokasikan surplus tabungan Anda ke dalam portofolio investasi jangka panjang."
-                    : "Kondisi stabil. Pertimbangkan untuk mengurangi pengeluaran sekunder agar rasio tabungan bulanan dapat ditingkatkan mendekati 20%."}
-                </span>
-              </>
-            ) : (
-              <>
-                <AlertTriangle size={18} className="shrink-0 text-amber-400 mt-0.5" />
-                <span className="leading-relaxed">
-                  Peringatan: Beban utang atau alokasi tabungan Anda berada di luar batas aman. Prioritaskan pelunasan utang berbunga tinggi.
-                </span>
-              </>
-            )}
+          <div className="tile mt-5 flex items-start gap-3 rounded-2xl p-4 text-xs">
+            <InsightIcon size={16} className={`mt-0.5 shrink-0 ${insight.tone}`} />
+            <span className="leading-relaxed text-muted">{insight.text}</span>
           </div>
         )}
       </div>

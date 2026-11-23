@@ -82,10 +82,11 @@ export default function CalculatorPage() {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 min-h-screen select-none space-y-8 max-w-7xl mx-auto">
+    <div className="mx-auto w-full max-w-6xl space-y-6">
       <Header mode={mode} setMode={setMode} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {/* Dua kolom sama lebar & sama tinggi */}
+      <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-2">
         <Form
           mode={mode}
           targetAmount={targetAmount}

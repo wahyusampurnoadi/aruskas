@@ -2,94 +2,91 @@
 
 import { HandCoins, Plus, ArrowUpRight, ArrowDownLeft, Scale } from "lucide-react";
 
-export default function DebtHeader({
-  totalPiutang,
-  totalHutang,
-  onOpenAddModal,
-}) {
-  const formatRupiah = (val) =>
-    `Rp ${Number(val || 0).toLocaleString("id-ID")}`;
+export default function DebtHeader({ totalPiutang, totalHutang, onOpenAddModal }) {
+  const formatRupiah = (val) => `Rp ${Number(val || 0).toLocaleString("id-ID")}`;
 
   const netBalance = totalPiutang - totalHutang;
 
+  const tiles = [
+    {
+      label: "Total piutang saya",
+      value: formatRupiah(totalPiutang),
+      hint: "Uang kamu di orang lain",
+      tone: "text-emerald-500",
+      bg: "bg-emerald-500/15",
+      Icon: ArrowUpRight,
+    },
+    {
+      label: "Total hutang saya",
+      value: formatRupiah(totalHutang),
+      hint: "Tagihan harus dilunasi",
+      tone: "text-rose-500",
+      bg: "bg-rose-500/15",
+      Icon: ArrowDownLeft,
+    },
+    {
+      label: "Posisi bersih (net)",
+      value: formatRupiah(netBalance),
+      hint: netBalance >= 0 ? "Surplus piutang" : "Defisit hutang",
+      tone: netBalance >= 0 ? "text-accent" : "text-amber-500",
+      bg: "bg-accent/15",
+      Icon: Scale,
+    },
+  ];
+
   return (
-    <div className="relative overflow-hidden rounded-3xl bg-slate-900/60 border border-white/10 backdrop-blur-2xl p-6 lg:p-8 shadow-2xl">
-      {/* Background Accent Gradients */}
-      <div className="absolute -top-24 -right-24 w-72 h-72 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-violet-500/10 rounded-full blur-3xl pointer-events-none" />
+    <section className="glass-strong relative overflow-hidden rounded-[28px] p-6 sm:p-8">
+      <div
+        aria-hidden
+        className="animate-float-a pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-cyan-400/20 blur-3xl"
+      />
+      <div
+        aria-hidden
+        className="animate-float-b pointer-events-none absolute -bottom-24 -left-16 h-64 w-64 rounded-full bg-violet-500/15 blur-3xl"
+      />
 
-      <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-semibold mb-3">
-            <HandCoins className="w-3.5 h-3.5" />
-            <span>Debt & Receivable Tracker</span>
-          </div>
-
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-            Catatan Hutang & Piutang
+      <div className="relative flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+        <div className="min-w-0">
+          <span className="chip inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-semibold text-accent">
+            <HandCoins className="h-3.5 w-3.5" />
+            Debt & receivable tracker
+          </span>
+          <h1 className="mt-4 text-3xl font-black tracking-tight text-main sm:text-4xl">
+            Hutang & piutang
           </h1>
-          <p className="text-sm text-slate-400 mt-1 max-w-lg">
-            Pantau uang yang dipinjam orang lain (Piutang) dan tagihan yang harus kamu lunasi (Hutang) secara terstruktur.
+          <p className="mt-2 max-w-lg text-sm leading-relaxed text-muted">
+            Pantau uang yang dipinjam orang lain dan tagihan yang harus kamu lunasi, secara terstruktur.
           </p>
         </div>
 
         <button
           onClick={onOpenAddModal}
-          className="self-start md:self-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-sm shadow-[0_0_25px_rgba(6,182,212,0.3)] transition-all duration-200 cursor-pointer active:scale-95 shrink-0"
+          className="btn-primary inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-2xl px-5 py-3 text-sm font-semibold md:self-auto"
         >
-          <Plus className="w-4 h-4" />
-          <span>Tambah Catatan</span>
+          <Plus className="h-4 w-4" />
+          Tambah catatan
         </button>
       </div>
 
-      {/* Summary Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8 pt-6 border-t border-white/10">
-        {/* Total Piutang (Saya Pinjamkan ke Orang) */}
-        <div className="p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 backdrop-blur-md">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">
-              Total Piutang Saya
-            </span>
-            <div className="w-7 h-7 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-              <ArrowUpRight className="w-4 h-4" />
+      <div className="relative mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        {tiles.map((t) => {
+          const Icon = t.Icon;
+          return (
+            <div key={t.label} className="tile flex h-full flex-col rounded-2xl p-5">
+              <div className="flex items-start justify-between gap-3">
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-subtle">{t.label}</p>
+                <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${t.bg} ${t.tone}`}>
+                  <Icon className="h-4 w-4" />
+                </span>
+              </div>
+              <p className={`mt-3 break-words text-xl font-black tracking-tight sm:text-2xl ${t.tone}`}>
+                {t.value}
+              </p>
+              <p className="mt-auto pt-2 text-[11px] text-subtle">{t.hint}</p>
             </div>
-          </div>
-          <p className="text-xl font-bold text-white">{formatRupiah(totalPiutang)}</p>
-          <p className="text-[11px] text-slate-400 mt-1">Uang kamu di orang lain</p>
-        </div>
-
-        {/* Total Hutang (Saya Utang ke Orang) */}
-        <div className="p-4 rounded-2xl bg-rose-500/5 border border-rose-500/20 backdrop-blur-md">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-rose-400 uppercase tracking-wider">
-              Total Hutang Saya
-            </span>
-            <div className="w-7 h-7 rounded-xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-rose-400">
-              <ArrowDownLeft className="w-4 h-4" />
-            </div>
-          </div>
-          <p className="text-xl font-bold text-white">{formatRupiah(totalHutang)}</p>
-          <p className="text-[11px] text-slate-400 mt-1">Tagihan harus dilunasi</p>
-        </div>
-
-        {/* Saldo Net (Selisih) */}
-        <div className="p-4 rounded-2xl bg-cyan-500/5 border border-cyan-500/20 backdrop-blur-md">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-cyan-400 uppercase tracking-wider">
-              Posisi Bersih (Net)
-            </span>
-            <div className="w-7 h-7 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
-              <Scale className="w-4 h-4" />
-            </div>
-          </div>
-          <p className={`text-xl font-bold ${netBalance >= 0 ? "text-cyan-400" : "text-amber-400"}`}>
-            {formatRupiah(netBalance)}
-          </p>
-          <p className="text-[11px] text-slate-400 mt-1">
-            {netBalance >= 0 ? "Surplus Piutang" : "Defisit Hutang"}
-          </p>
-        </div>
+          );
+        })}
       </div>
-    </div>
+    </section>
   );
 }

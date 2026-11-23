@@ -1,3 +1,5 @@
+"use client";
+
 import { X } from "lucide-react";
 
 export default function WalletModal({
@@ -13,45 +15,52 @@ export default function WalletModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-[#0b1329] border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-white">{title}</h3>
+    <div
+      className="fixed inset-y-0 left-0 right-0 z-[9999] flex items-end justify-center bg-black/40 p-0 backdrop-blur-sm lg:left-[280px] sm:items-center sm:p-4"
+      onClick={onClose}
+    >
+      <div
+        className="glass-strong relative w-full max-w-md rounded-t-[28px] p-6 sm:rounded-[28px] sm:p-8"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-bold text-main">{title}</h3>
+            <p className="mt-0.5 text-xs text-subtle">Lengkapi data dompet atau aset</p>
+          </div>
           <button
+            type="button"
             onClick={onClose}
-            className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all"
+            aria-label="Tutup"
+            className="btn-icon inline-flex h-9 w-9 items-center justify-center rounded-xl"
           >
-            <X className="w-5 h-5" />
+            <X className="h-4 w-4" />
           </button>
         </div>
 
-        <form onSubmit={onSubmit} className="space-y-4">
+        <form onSubmit={onSubmit} className="space-y-5">
           <div>
-            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-              Nama Dompet / Aset
-            </label>
+            <label className="mb-1.5 block text-xs font-semibold text-main">Nama dompet / aset</label>
             <input
               type="text"
               placeholder="Contoh: BCA Utama, Bibit, Rumah BSD"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
-              className="w-full bg-slate-900/90 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-cyan-500 transition-colors"
+              className="input-glass w-full rounded-xl px-4 py-3 text-sm"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-              Tipe Dompet / Kategori
-            </label>
+            <label className="mb-1.5 block text-xs font-semibold text-main">Tipe / kategori</label>
             <select
               value={formData.type}
               onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-              className="w-full bg-slate-900/90 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-cyan-500 transition-colors"
+              className="input-glass w-full cursor-pointer rounded-xl px-4 py-3 text-sm"
             >
               <option value="Bank">Bank</option>
               <option value="E-Wallet">E-Wallet</option>
-              <option value="Cash">Cash / Tunai</option>
+              <option value="Cash">Cash / tunai</option>
               <option value="Saham">Saham</option>
               <option value="Crypto">Crypto</option>
               <option value="Deposito">Deposito</option>
@@ -62,22 +71,18 @@ export default function WalletModal({
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-              Nomor Rekening / Keterangan Akun
-            </label>
+            <label className="mb-1.5 block text-xs font-semibold text-main">Nomor rekening / keterangan</label>
             <input
               type="text"
-              placeholder="Opsional (No Rekening / RDN / Sub-Rekening)"
+              placeholder="Opsional (no. rekening, RDN, sub-rekening)"
               value={formData.accountNumber}
               onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
-              className="w-full bg-slate-900/90 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-cyan-500 transition-colors"
+              className="input-glass w-full rounded-xl px-4 py-3 text-sm"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-              Saldo / Nilai Aset (Rp)
-            </label>
+            <label className="mb-1.5 block text-xs font-semibold text-main">Saldo / nilai aset (Rp)</label>
             <input
               type="text"
               inputMode="numeric"
@@ -90,22 +95,19 @@ export default function WalletModal({
                 })
               }
               required
-              className="w-full bg-slate-900/90 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-cyan-500 transition-colors"
+              className="input-glass w-full rounded-xl px-4 py-3 text-sm font-semibold"
             />
           </div>
 
-          <div className="flex items-center gap-3 pt-4">
+          <div className="grid grid-cols-2 gap-3 pt-2">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition-all"
+              className="btn-ghost rounded-xl py-3 text-sm font-semibold"
             >
               Batal
             </button>
-            <button
-              type="submit"
-              className="flex-1 py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 text-white font-bold text-xs transition-all shadow-[0_0_20px_rgba(6,182,212,0.3)]"
-            >
+            <button type="submit" className="btn-primary rounded-xl py-3 text-sm font-semibold">
               {submitLabel}
             </button>
           </div>
