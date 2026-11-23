@@ -1,24 +1,30 @@
 import { NextResponse } from "next/server";
 import { getAuth } from "firebase-admin/auth";
-import { initAdmin } from "@/lib/firebaseAdmin"; // Sesuaikan lokasi helper Firebase Admin kamu
+import { initAdmin } from "@/lib/firebaseAdmin";
 
 export async function POST(req) {
   try {
-    // Inisialisasi Firebase Admin
     initAdmin();
 
-    const body = await req.json();
-    const { uid, newEmail } = body;
+    // Wajib login: ambil token dari header Authorization
+    const authHeader = req.headers.get("authorization") || "";
+    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
 
-    if (!uid || !newEmail) {
-      return NextResponse.json(
-        { error: "UID dan email baru wajib diisi!" },
-        { status: 400 }
-      );
+    if (!token) {
+      return NextResponse.json({ error: "Tidak terautentikasi" }, { status: 401 });
     }
 
-    // Perbarui email pengguna di Firebase Auth secara instan
-    await getAuth().updateUser(uid, {
+    // UID diambil dari token yang terverifikasi, bukan dari body
+    const decoded = await getAuth().verifyIdToken(token);
+
+    const body = await req.json();
+    const newEmail = body?.newEmail?.trim();
+
+    if (!newEmail) {
+      return NextResponse.json({ error: "Email baru wajib diisi!" }, { status: 400 });
+    }
+
+    await getAuth().updateUser(decoded.uid, {
       email: newEmail,
       emailVerified: true,
     });
