@@ -61,6 +61,9 @@ const formatDigits = (value) => {
 const statusColor = (percent) =>
   percent >= 100 ? "#f43f5e" : percent >= 70 ? "#f59e0b" : "#10b981";
 
+const signedDelta = (t) =>
+  t.type === "income" ? Number(t.amount) || 0 : -(Number(t.amount) || 0);
+
 /* ---------- Kerangka panel seragam ---------- */
 const PANEL = "glass relative flex h-full flex-col overflow-hidden rounded-[28px] p-6 sm:p-8";
 const PANEL_STRONG = "glass-strong relative flex h-full flex-col overflow-hidden rounded-[28px] p-6 sm:p-8";
@@ -969,82 +972,106 @@ export default function DashboardPage() {
         )}
 
         {!loadingTransactions && !errorTransactions && transactions.length > 0 && (
-          <div className="space-y-6">
-            {groupedTransactions.map((group) => (
-              <div key={group.key}>
-                <p className="mb-2 text-[11px] font-semibold text-subtle sm:text-xs">{group.key}</p>
-                <ul className="space-y-2">
-                  {group.items.map((t) => {
-                    const isIncome = t.type === "income";
-                    const Icon = isIncome ? ArrowDownRight : ArrowUpRight;
+          <div className="space-y-4">
+            {groupedTransactions.map((group) => {
+              const dayNet = group.items.reduce((sum, t) => sum + signedDelta(t), 0);
+              return (
+                <div
+                  key={group.key}
+                  className="overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--glass-hover)]"
+                >
+                  {/* Header tanggal dengan selisih harian */}
+                  <div className="flex items-center justify-between gap-3 border-b border-[var(--line)] px-4 py-2.5">
+                    <p className="min-w-0 text-[11px] font-semibold text-muted">{group.key}</p>
+                    <p
+                      className={`shrink-0 text-[11px] font-bold tabular-nums ${
+                        dayNet >= 0 ? "text-emerald-500" : "text-rose-500"
+                      }`}
+                    >
+                      {dayNet >= 0 ? "+" : "−"} {formatMoney(Math.abs(dayNet))}
+                    </p>
+                  </div>
 
-                    const actions = (
-                      <>
-                        {t.imageUrl && (
-                          <button
-                            onClick={() => setPreviewImageModalUrl(t.imageUrl)}
-                            className="chip rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-muted transition hover:text-accent"
-                          >
-                            Bukti
-                          </button>
-                        )}
-                        <button
-                          onClick={() => editTransaction(t)}
-                          aria-label="Edit transaksi"
-                          className="btn-icon inline-flex h-8 w-8 items-center justify-center rounded-lg"
+                  {/* Baris transaksi */}
+                  <ul className="divide-y divide-[var(--line)]">
+                    {group.items.map((t) => {
+                      const isIncome = t.type === "income";
+                      const Icon = isIncome ? ArrowDownRight : ArrowUpRight;
+
+                      return (
+                        <li
+                          key={t.id}
+                          className="flex flex-col gap-2.5 px-4 py-3.5 transition hover:bg-[var(--glass-bg-strong)] sm:flex-row sm:items-center sm:gap-4"
                         >
-                          <Pencil size={13} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteTransaction(t.id)}
-                          aria-label="Hapus transaksi"
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-rose-500 transition hover:bg-rose-500/10"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </>
-                    );
+                          {/* Isi utama: ikon, teks, nominal */}
+                          <div className="flex min-w-0 flex-1 items-start gap-3 sm:items-center sm:gap-4">
+                            <span
+                              className={`mt-0.5 h-9 w-[3px] shrink-0 rounded-full sm:mt-0 ${
+                                isIncome ? "bg-emerald-500" : "bg-rose-500"
+                              }`}
+                            />
 
-                    return (
-                      <li key={t.id} className="tile rounded-2xl p-3.5 sm:p-4">
-                        <div className="flex items-start gap-3 sm:items-center sm:gap-4">
-                          <span
-                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl sm:h-10 sm:w-10 ${
-                              isIncome ? "bg-emerald-500/15 text-emerald-500" : "bg-rose-500/15 text-rose-500"
-                            }`}
-                          >
-                            <Icon size={16} />
-                          </span>
+                            <span
+                              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+                                isIncome ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"
+                              }`}
+                            >
+                              <Icon size={15} />
+                            </span>
 
-                          <div className="min-w-0 flex-1">
-                            <p className="break-words text-sm font-semibold leading-snug text-main">
-                              {t.category || (isIncome ? "Pemasukan" : "Pengeluaran")}
-                            </p>
-                            <p className="mt-0.5 break-words text-xs leading-relaxed text-subtle">
-                              {t.note || "Tanpa catatan"}
+                            {/* Teks: lebar penuh, tidak dipotong */}
+                            <div className="min-w-0 flex-1">
+                              <p className="break-words text-sm font-semibold leading-snug text-main">
+                                {t.category || (isIncome ? "Pemasukan" : "Pengeluaran")}
+                              </p>
+                              <p className="mt-0.5 break-words text-xs leading-relaxed text-subtle">
+                                {t.note || "Tanpa catatan"}
+                              </p>
+                            </div>
+
+                            <p
+                              className={`shrink-0 whitespace-nowrap pt-0.5 text-right text-sm font-bold tabular-nums ${
+                                isIncome ? "text-emerald-500" : "text-rose-500"
+                              }`}
+                            >
+                              {isIncome ? "+" : "−"} {formatMoney(t.amount)}
                             </p>
                           </div>
 
-                          <p
-                            className={`shrink-0 whitespace-nowrap pt-0.5 text-right text-sm font-bold tabular-nums ${
-                              isIncome ? "text-emerald-500" : "text-rose-500"
-                            }`}
-                          >
-                            {isIncome ? "+" : "−"} {formatMoney(t.amount)}
-                          </p>
-
-                          <div className="hidden shrink-0 items-center gap-1.5 sm:flex">{actions}</div>
-                        </div>
-
-                        <div className="mt-3 flex items-center justify-end gap-1.5 border-t border-[var(--line)] pt-3 sm:hidden">
-                          {actions}
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            ))}
+                          {/* Aksi: baris sendiri di HP, sebaris di layar besar */}
+                          <div className="flex shrink-0 items-center justify-end gap-1 border-t border-[var(--line)] pt-2.5 sm:border-0 sm:pt-0">
+                            {t.imageUrl && (
+                              <button
+                                onClick={() => setPreviewImageModalUrl(t.imageUrl)}
+                                className="rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-subtle transition hover:bg-[var(--glass-bg-strong)] hover:text-accent"
+                              >
+                                Bukti
+                              </button>
+                            )}
+                            <button
+                              onClick={() => editTransaction(t)}
+                              aria-label="Edit transaksi"
+                              title="Edit"
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-subtle transition hover:bg-[var(--glass-bg-strong)] hover:text-main"
+                            >
+                              <Pencil size={13} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteTransaction(t.id)}
+                              aria-label="Hapus transaksi"
+                              title="Hapus"
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-subtle transition hover:bg-rose-500/10 hover:text-rose-500"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              );
+            })}
           </div>
         )}
       </section>

@@ -68,12 +68,187 @@ const STEPS = [
   { icon: Target, title: "Capai", desc: "Atur target dan biarkan estimasinya dihitung." },
 ];
 
+// Pos pemisahan uang (tanpa nominal)
+const POCKETS = [
+  { key: "kebutuhan", label: "Kebutuhan", left: "12%", fill: "62%", grad: "from-cyan-500/80 to-cyan-300/45" },
+  { key: "tabungan", label: "Tabungan", left: "39%", fill: "78%", grad: "from-emerald-500/80 to-emerald-300/45" },
+  { key: "impian", label: "Impian", left: "66%", fill: "44%", grad: "from-violet-500/80 to-violet-300/45" },
+];
+
+// Jarak horizontal tiap lembar menuju pos (0 = tengah)
+const TX = ["-27cqw", "0cqw", "27cqw"];
+
+// Lembar dolar yang masuk satu per satu, berulang setiap 6 detik
+const BILLS = [
+  { col: 0, delay: 0, rot: -8 },
+  { col: 1, delay: 0.75, rot: 6 },
+  { col: 2, delay: 1.5, rot: -4 },
+  { col: 1, delay: 2.25, rot: 9 },
+  { col: 0, delay: 3, rot: 3 },
+  { col: 2, delay: 3.75, rot: -6 },
+  { col: 0, delay: 4.5, rot: 5 },
+  { col: 1, delay: 5.25, rot: -3 },
+];
+
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 22 },
   whileInView: { opacity: 1, y: 0 },
   viewport: { once: true, margin: "-80px" },
   transition: { duration: 0.7, delay, ease: [0.22, 1, 0.36, 1] },
 });
+
+/* Pemisah uang 3D: lembar dolar masuk dari celah lalu jatuh ke tiga pos. Murni CSS. */
+function SplitSavings() {
+  return (
+    <div className="relative mx-auto flex w-full max-w-[420px] flex-col items-center">
+      <style>{`
+        @keyframes ssDrop {
+          0%   { opacity: 0; transform: translate(0, -18px) scale(0.7); }
+          10%  { opacity: 1; transform: translate(0, 0) scale(1); }
+          55%  { opacity: 1; transform: translate(var(--tx), var(--ty)) rotate(var(--rot)); }
+          70%  { opacity: 1; transform: translate(var(--tx), calc(var(--ty) + 4px)) rotate(var(--rot)); }
+          80%, 100% { opacity: 0; transform: translate(var(--tx), calc(var(--ty) + 6px)) scale(0.85); }
+        }
+        @keyframes ssFill {
+          0%   { height: 14%; }
+          100% { height: var(--h); }
+        }
+        @keyframes ssFloat {
+          0%, 100% { transform: translateY(0px); }
+          50%      { transform: translateY(-6px); }
+        }
+        .ss-bill {
+          position: absolute;
+          left: 50%;
+          top: 10%;
+          width: 64px;
+          height: 32px;
+          margin-left: -32px;
+          border-radius: 4px;
+          background: linear-gradient(135deg, #e7f6e8 0%, #a9d9b0 45%, #6fae7c 100%);
+          box-shadow: 0 6px 14px -6px rgba(15, 23, 42, 0.5);
+          opacity: 0;
+          animation: ssDrop 6s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+          overflow: hidden;
+        }
+        /* Bingkai dalam khas lembaran dolar */
+        .ss-bill::before {
+          content: "";
+          position: absolute;
+          inset: 3px;
+          border: 1px solid rgba(34, 80, 46, 0.45);
+          border-radius: 2px;
+        }
+        /* Lingkaran oval di tengah */
+        .ss-bill::after {
+          content: "$";
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          width: 18px;
+          height: 22px;
+          transform: translate(-50%, -50%);
+          border: 1px solid rgba(34, 80, 46, 0.5);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 11px;
+          font-weight: 800;
+          color: rgba(34, 80, 46, 0.7);
+          background: rgba(255, 255, 255, 0.25);
+          line-height: 1;
+        }
+        .ss-fill {
+          position: absolute;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          animation: ssFill 6s ease-in-out infinite alternate;
+        }
+        .ss-float {
+          animation: ssFloat 7s ease-in-out infinite;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .ss-bill { display: none; }
+          .ss-fill { animation: none; height: var(--h); }
+          .ss-float { animation: none; }
+        }
+      `}</style>
+
+      {/* Cahaya latar */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute left-1/2 top-[45%] h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-400/15 blur-3xl"
+      />
+
+      {/* Panggung */}
+      <div
+        className="ss-float relative h-[320px] w-full"
+        style={{ containerType: "size", perspective: "900px" }}
+      >
+        <div
+          className="absolute inset-0"
+          style={{ transform: "rotateX(8deg)", transformStyle: "preserve-3d" }}
+        >
+          {/* Celah masuk uang */}
+          <div className="absolute left-1/2 top-[4%] h-[5%] w-[34%] -translate-x-1/2 rounded-full bg-[var(--track)]" />
+          <div className="absolute left-1/2 top-[9%] h-[6%] w-[46%] -translate-x-1/2 rounded-b-full border border-t-0 border-[var(--line)] bg-[var(--glass-hover)]" />
+
+          {/* Tabung pos */}
+          {POCKETS.map((p) => (
+            <div key={p.key}>
+              <div
+                className="absolute bottom-[18%] h-[46%] w-[22%] overflow-hidden rounded-[22px] border border-[var(--line)] bg-[var(--glass-hover)]"
+                style={{ left: p.left }}
+              >
+                <div
+                  className={`ss-fill rounded-b-[22px] bg-linear-to-t ${p.grad}`}
+                  style={{ "--h": p.fill }}
+                />
+                {/* Kilau kaca */}
+                <div className="absolute inset-y-3 left-2 w-1.5 rounded-full bg-white/15" />
+              </div>
+
+              <p
+                className="absolute bottom-[2%] w-[22%] text-center text-[10px] font-semibold uppercase tracking-widest text-subtle"
+                style={{ left: p.left }}
+              >
+                {p.label}
+              </p>
+            </div>
+          ))}
+
+          {/* Lembar dolar yang masuk */}
+          {BILLS.map((b, i) => (
+            <span
+              key={i}
+              className="ss-bill"
+              style={{
+                "--tx": TX[b.col],
+                "--ty": "28cqh",
+                "--rot": `${b.rot}deg`,
+                animationDelay: `${b.delay}s`,
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Bayangan dasar */}
+        <div
+          aria-hidden
+          className="absolute bottom-[-2%] left-1/2 h-4 w-[80%] -translate-x-1/2 rounded-full bg-black/35 blur-md"
+        />
+      </div>
+
+      {/* Keterangan */}
+      <div className="mt-6 text-center">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-subtle">Uangmu terbagi secara rapi</p>
+        <p className="mt-1 text-xs text-muted">Setiap pemasukan langsung masuk ke posnya masing-masing.</p>
+      </div>
+    </div>
+  );
+}
 
 function Marquee() {
   const row = [...MARQUEE_ITEMS, ...MARQUEE_ITEMS];
@@ -98,7 +273,6 @@ function Marquee() {
   );
 }
 
-/* Fitur: di HP chip horizontal, di desktop daftar vertikal */
 function FeatureShowcase() {
   const [active, setActive] = useState(FEATURES[0].key);
   const current = FEATURES.find((f) => f.key === active);
@@ -112,7 +286,6 @@ function FeatureShowcase() {
           Semua yang kamu butuhkan, <span className="text-gradient">tanpa yang berlebihan.</span>
         </h2>
 
-        {/* Mobile: chip horizontal */}
         <div className="-mx-4 mt-6 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:hidden">
           {FEATURES.map((f) => {
             const isActive = f.key === active;
@@ -131,7 +304,6 @@ function FeatureShowcase() {
           })}
         </div>
 
-        {/* Desktop: daftar vertikal */}
         <div className="mt-8 hidden space-y-2 lg:block">
           {FEATURES.map((f) => {
             const FIcon = f.icon;
@@ -173,10 +345,6 @@ function FeatureShowcase() {
       </div>
 
       <div className="relative lg:col-span-7">
-        <div
-          aria-hidden
-          className="animate-float-a pointer-events-none absolute -right-10 -top-10 h-64 w-64 rounded-full bg-cyan-400/20 blur-3xl"
-        />
         <div className="glass-strong relative min-h-[260px] overflow-hidden rounded-[24px] p-6 sm:min-h-[360px] sm:rounded-[28px] sm:p-10">
           <AnimatePresence mode="wait">
             <motion.div
@@ -215,13 +383,10 @@ function FeatureShowcase() {
   );
 }
 
-/* Cara kerja: daftar vertikal di HP, tiga kolom di layar lebih besar */
 function Timeline() {
   return (
     <div className="relative">
-      {/* Garis penghubung vertikal (HP) */}
       <div className="absolute bottom-6 left-6 top-6 w-px bg-[var(--line)] sm:hidden" />
-      {/* Garis penghubung horizontal (desktop) */}
       <div className="absolute left-0 right-0 top-6 hidden h-px bg-gradient-to-r from-transparent via-[var(--line)] to-transparent sm:block" />
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-3 sm:gap-6">
@@ -253,17 +418,11 @@ function Timeline() {
   );
 }
 
-/* Pratinjau antarmuka tanpa data nyata */
 function AppPreview() {
   const navItems = [LayoutDashboard, Wallet, Target, Settings];
 
   return (
     <motion.div {...fadeUp(0)} className="relative">
-      <div
-        aria-hidden
-        className="animate-float-b pointer-events-none absolute -left-16 top-10 h-64 w-64 rounded-full bg-indigo-500/20 blur-3xl"
-      />
-
       <div className="glass-strong relative overflow-hidden rounded-[24px] sm:rounded-[28px]">
         <div className="flex items-center gap-2 border-b border-[var(--line)] px-4 py-3 sm:px-5 sm:py-3.5">
           <span className="h-2.5 w-2.5 rounded-full bg-rose-400/70" />
@@ -371,6 +530,87 @@ function PreviewSection() {
   );
 }
 
+function Hero() {
+  return (
+    <main className="relative z-10 mx-auto w-full max-w-6xl px-5 pb-16 pt-12 sm:px-6 sm:pb-24 sm:pt-24">
+      <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-10">
+        <div className="flex flex-col items-center text-center lg:items-start lg:text-left">
+          <motion.span
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="glass inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[11px] font-semibold text-accent sm:gap-2 sm:px-4 sm:text-xs"
+          >
+            <Sparkles size={12} />
+            Aplikasi pencatat keuangan pribadi
+          </motion.span>
+
+          <motion.h1
+            initial={{ opacity: 0, y: 26 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+            className="mt-6 text-4xl font-black leading-[1.05] tracking-tight text-main sm:mt-8 sm:text-6xl lg:text-7xl"
+          >
+            Uangmu,
+            <br />
+            <span className="text-gradient">lebih terarah.</span>
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="mt-4 max-w-md text-sm leading-relaxed text-muted sm:mt-6 sm:text-lg"
+          >
+            Catat arus kas, atur tabungan, dan wujudkan impianmu dengan cara yang sederhana, aman, dan realtime.
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.3 }}
+            className="mt-8 flex w-full flex-col items-center gap-3 sm:mt-10 sm:w-auto sm:flex-row lg:items-start"
+          >
+            <Link
+              href="/register"
+              className="btn-primary group inline-flex w-full items-center justify-center gap-2 rounded-2xl px-7 py-3.5 text-sm font-semibold sm:w-auto"
+            >
+              Mulai gratis
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </Link>
+            <Link
+              href="/login"
+              className="btn-ghost inline-flex w-full items-center justify-center rounded-2xl px-7 py-3.5 text-sm font-semibold sm:w-auto"
+            >
+              Saya sudah punya akun
+            </Link>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1, delay: 0.5 }}
+            className="mt-8 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[11px] text-subtle sm:mt-10 sm:gap-x-6 sm:text-xs lg:justify-start"
+          >
+            <span className="flex items-center gap-1.5"><Zap size={12} className="text-accent" /> Ringan & cepat</span>
+            <span className="flex items-center gap-1.5"><Lock size={12} className="text-accent" /> Data privat</span>
+            <span className="flex items-center gap-1.5"><LineChart size={12} className="text-accent" /> Grafik otomatis</span>
+          </motion.div>
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
+          className="relative"
+        >
+          <SplitSavings />
+        </motion.div>
+      </div>
+    </main>
+  );
+}
+
 export default function Home() {
   return (
     <div className="relative flex min-h-dvh flex-col overflow-hidden">
@@ -424,69 +664,7 @@ export default function Home() {
       </header>
 
       {/* HERO */}
-      <main className="relative z-10 mx-auto flex w-full max-w-5xl flex-col items-center px-5 pb-16 pt-12 text-center sm:px-6 sm:pb-24 sm:pt-28">
-        <motion.span
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="glass inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[11px] font-semibold text-accent sm:gap-2 sm:px-4 sm:text-xs"
-        >
-          <Sparkles size={12} />
-          Aplikasi pencatat keuangan pribadi
-        </motion.span>
-
-        <motion.h1
-          initial={{ opacity: 0, y: 26 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-6 text-4xl font-black leading-[1.05] tracking-tight text-main sm:mt-8 sm:text-7xl"
-        >
-          Arus uang kamu,
-          <br />
-          <span className="text-gradient">lebih terarah.</span>
-        </motion.h1>
-
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          className="mt-4 max-w-xl text-sm leading-relaxed text-muted sm:mt-6 sm:text-lg"
-        >
-          Catat arus kas, atur tabungan, dan wujudkan impianmu dengan cara yang sederhana, aman, dan realtime.
-        </motion.p>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.3 }}
-          className="mt-8 flex w-full flex-col items-center gap-3 sm:mt-10 sm:w-auto sm:flex-row"
-        >
-          <Link
-            href="/register"
-            className="btn-primary group inline-flex w-full items-center justify-center gap-2 rounded-2xl px-7 py-3.5 text-sm font-semibold sm:w-auto"
-          >
-            Mulai gratis
-            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-          </Link>
-          <Link
-            href="/login"
-            className="btn-ghost inline-flex w-full items-center justify-center rounded-2xl px-7 py-3.5 text-sm font-semibold sm:w-auto"
-          >
-            Saya sudah punya akun
-          </Link>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1, delay: 0.5 }}
-          className="mt-8 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[11px] text-subtle sm:mt-12 sm:gap-x-6 sm:text-xs"
-        >
-          <span className="flex items-center gap-1.5"><Zap size={12} className="text-accent" /> Ringan & cepat</span>
-          <span className="flex items-center gap-1.5"><Lock size={12} className="text-accent" /> Data privat</span>
-          <span className="flex items-center gap-1.5"><LineChart size={12} className="text-accent" /> Grafik otomatis</span>
-        </motion.div>
-      </main>
+      <Hero />
 
       {/* MARQUEE */}
       <motion.div {...fadeUp(0)} className="relative z-10">
