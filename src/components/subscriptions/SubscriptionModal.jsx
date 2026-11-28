@@ -2,6 +2,9 @@
 
 import { X, Repeat, Calendar, Wallet, Tag } from "lucide-react";
 
+const LABEL = "mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.16em] text-subtle";
+const FIELD = "input-glass w-full rounded-xl px-4 py-2.5 text-sm";
+
 export default function SubscriptionModal({
   isOpen,
   title,
@@ -15,100 +18,96 @@ export default function SubscriptionModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
-      <div className="relative w-full max-w-lg rounded-3xl bg-[#0b1329] border border-white/10 p-6 sm:p-8 shadow-2xl overflow-hidden">
-        {/* Modal Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-white/10">
+    <div
+      className="fixed inset-y-0 left-0 right-0 z-[100] flex items-end justify-center bg-black/40 p-0 backdrop-blur-sm sm:items-center sm:p-4 lg:left-[280px]"
+      onClick={onClose}
+    >
+      <div
+        className="glass-strong relative max-h-[92dvh] w-full overflow-y-auto rounded-t-[28px] p-5 [scrollbar-gutter:stable] sm:max-w-lg sm:rounded-[28px] sm:p-8"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="mb-6 flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-violet-500/20 border border-violet-500/30 text-violet-400 flex items-center justify-center font-bold">
-              <Repeat className="w-5 h-5" />
-            </div>
+            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-500/15 text-violet-500">
+              <Repeat className="h-5 w-5" />
+            </span>
             <div>
-              <h2 className="text-lg font-bold text-white">{title}</h2>
-              <p className="text-xs text-slate-400">Pengaturan transaksi berulang & langganan</p>
+              <h2 className="text-lg font-bold text-main">{title}</h2>
+              <p className="text-xs text-subtle">Pengaturan transaksi berulang & langganan</p>
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer"
+            aria-label="Tutup"
+            className="btn-icon inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
           >
-            <X className="w-5 h-5" />
+            <X className="h-4 w-4" />
           </button>
         </div>
 
-        {/* Modal Form */}
-        <form onSubmit={onSubmit} className="space-y-4 mt-5">
-          {/* Jenis Transaksi */}
+        <form onSubmit={onSubmit} className="space-y-5">
+          {/* Tipe transaksi */}
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-              Tipe Transaksi
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setFormData({ ...formData, type: "expense" })}
-                className={`py-2.5 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                  formData.type === "expense"
-                    ? "bg-violet-500/20 border-violet-500/50 text-violet-400 shadow-[0_0_15px_rgba(139,92,246,0.2)]"
-                    : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10"
-                }`}
-              >
-                Pengeluaran Rutin
-              </button>
-              <button
-                type="button"
-                onClick={() => setFormData({ ...formData, type: "income" })}
-                className={`py-2.5 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                  formData.type === "income"
-                    ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]"
-                    : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10"
-                }`}
-              >
-                Pemasukan Rutin (Gaji, dll)
-              </button>
+            <label className={LABEL}>Tipe transaksi</label>
+            <div className="tile grid grid-cols-2 gap-1 rounded-2xl p-1">
+              {[
+                { key: "expense", label: "Pengeluaran rutin" },
+                { key: "income", label: "Pemasukan rutin" },
+              ].map((opt) => {
+                const active = formData.type === opt.key;
+                return (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, type: opt.key })}
+                    className={`cursor-pointer rounded-xl px-3 py-2.5 text-xs font-semibold transition-all ${
+                      active ? "btn-primary" : "text-muted hover:text-main"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Nama Layanan */}
+          {/* Nama */}
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-              Nama Langganan / Layanan
-            </label>
+            <label className={LABEL}>Nama langganan / layanan</label>
             <input
               type="text"
               required
-              placeholder="misal: Netflix, Wifi Biznet, Gaji Bulanan, Sewa Kost"
+              placeholder="misal: Netflix, Wifi Biznet, Gaji bulanan"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-4 py-2.5 rounded-xl bg-slate-900/80 border border-white/10 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-violet-500/50"
+              className={FIELD}
             />
           </div>
 
           {/* Nominal */}
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-              Nominal (Rp)
-            </label>
+            <label className={LABEL}>Nominal (Rp)</label>
             <input
               type="text"
+              inputMode="numeric"
               required
               placeholder="0"
               value={formatRupiahInput(formData.amount)}
               onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-              className="w-full px-4 py-2.5 rounded-xl bg-slate-900/80 border border-white/10 text-white placeholder-slate-500 text-sm font-semibold focus:outline-none focus:border-violet-500/50"
+              className={`${FIELD} font-semibold`}
             />
           </div>
 
-          {/* Frekuensi & Kategori */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Frekuensi & kategori */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                Frekuensi
-              </label>
+              <label className={LABEL}>Frekuensi</label>
               <select
                 value={formData.frequency}
                 onChange={(e) => setFormData({ ...formData, frequency: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-xl bg-slate-900/80 border border-white/10 text-white text-sm focus:outline-none focus:border-violet-500/50"
+                className={FIELD}
               >
                 <option value="monthly">Bulanan</option>
                 <option value="weekly">Mingguan</option>
@@ -117,34 +116,30 @@ export default function SubscriptionModal({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                Kategori
-              </label>
+              <label className={LABEL}>Kategori</label>
               <div className="relative">
-                <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Tag className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" />
                 <input
                   type="text"
-                  placeholder="Langganan, Wifi, Hiburan..."
+                  placeholder="Langganan, Wifi, Hiburan"
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-900/80 border border-white/10 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-violet-500/50"
+                  className={`${FIELD} pl-10`}
                 />
               </div>
             </div>
           </div>
 
-          {/* Dompet & Tanggal Jatuh Tempo */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Dompet & jatuh tempo */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                Dompet Terkait
-              </label>
+              <label className={LABEL}>Dompet terkait</label>
               <div className="relative">
-                <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Wallet className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" />
                 <select
                   value={formData.walletName}
                   onChange={(e) => setFormData({ ...formData, walletName: e.target.value })}
-                  className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-900/80 border border-white/10 text-white text-sm focus:outline-none focus:border-violet-500/50"
+                  className={`${FIELD} pl-10`}
                 >
                   <option value="BCA Utama">BCA Utama</option>
                   <option value="GoPay / E-Wallet">GoPay / E-Wallet</option>
@@ -154,34 +149,32 @@ export default function SubscriptionModal({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                Jatuh Tempo Berikutnya
-              </label>
+              <label className={LABEL}>Jatuh tempo berikutnya</label>
               <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Calendar className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" />
                 <input
                   type="date"
                   required
                   value={formData.nextDueDate}
                   onChange={(e) => setFormData({ ...formData, nextDueDate: e.target.value })}
-                  className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-900/80 border border-white/10 text-white text-sm focus:outline-none focus:border-violet-500/50"
+                  className={`${FIELD} pl-10`}
                 />
               </div>
             </div>
           </div>
 
-          {/* Submit Actions */}
-          <div className="pt-4 flex items-center justify-end gap-3 border-t border-white/10">
+          {/* Aksi */}
+          <div className="flex items-center justify-end gap-3 border-t border-[var(--line)] pt-5">
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-semibold cursor-pointer"
+              className="btn-ghost cursor-pointer rounded-xl px-5 py-2.5 text-xs font-semibold"
             >
               Batal
             </button>
             <button
               type="submit"
-              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg cursor-pointer active:scale-95"
+              className="btn-primary cursor-pointer rounded-xl px-6 py-2.5 text-xs font-semibold active:scale-95"
             >
               {submitLabel}
             </button>

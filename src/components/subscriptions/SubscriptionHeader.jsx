@@ -8,80 +8,88 @@ export default function SubscriptionHeader({
   dueSoonCount,
   onOpenAddModal,
 }) {
-  const formatRupiah = (val) =>
-    `Rp ${Number(val || 0).toLocaleString("id-ID")}`;
+  const formatRupiah = (val) => `Rp ${Number(val || 0).toLocaleString("id-ID")}`;
+
+  const stats = [
+    {
+      label: "Biaya tetap bulanan",
+      value: formatRupiah(monthlyTotal),
+      hint: "Estimasi komitmen rutin per bulan",
+      Icon: Repeat,
+      tone: "text-accent bg-accent/15",
+      bar: "bg-linear-to-r from-cyan-400 to-blue-500",
+    },
+    {
+      label: "Langganan aktif",
+      value: `${activeCount} layanan`,
+      hint: "Terjadwal berjalan rutin",
+      Icon: CalendarCheck,
+      tone: "text-emerald-500 bg-emerald-500/15",
+      bar: "bg-linear-to-r from-emerald-400 to-teal-500",
+    },
+    {
+      label: "Mendekati jatuh tempo",
+      value: `${dueSoonCount} tagihan`,
+      hint: "Jatuh tempo dalam 7 hari ke depan",
+      Icon: AlertCircle,
+      tone: "text-amber-500 bg-amber-500/15",
+      bar: "bg-linear-to-r from-amber-400 to-orange-500",
+    },
+  ];
 
   return (
-    <div className="relative overflow-hidden rounded-3xl bg-slate-900/60 border border-white/10 backdrop-blur-2xl p-6 lg:p-8 shadow-2xl">
-      {/* Background Accent Gradients */}
-      <div className="absolute -top-24 -right-24 w-72 h-72 bg-violet-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+    <section className="glass-strong relative overflow-hidden rounded-[28px] p-6 sm:p-8">
+      <div
+        aria-hidden
+        className="animate-float-a pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-violet-400/20 blur-3xl"
+      />
+      <div
+        aria-hidden
+        className="animate-float-b pointer-events-none absolute -bottom-24 -left-16 h-64 w-64 rounded-full bg-cyan-400/15 blur-3xl"
+      />
 
-      <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/30 text-violet-400 text-xs font-semibold mb-3">
-            <Repeat className="w-3.5 h-3.5" />
-            <span>Recurring & Subscriptions Manager</span>
-          </div>
-
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-            Langganan & Transaksi Berulang
+      <div className="relative flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+        <div className="min-w-0">
+          <span className="chip inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold text-muted">
+            <Repeat className="h-3 w-3 text-accent" />
+            Transaksi berulang
+          </span>
+          <h1 className="mt-3 text-2xl font-bold tracking-tight text-main sm:text-3xl">
+            Langganan & pemasukan rutin
           </h1>
-          <p className="text-sm text-slate-400 mt-1 max-w-lg">
-            Kelola tagihan bulanan rutin, langganan aplikasi (Netflix, Wifi), dan pemasukan tetap agar dicatat otomatis secara disiplin.
+          <p className="mt-2 max-w-lg text-sm leading-relaxed text-muted">
+            Kelola tagihan bulanan, layanan berlangganan, dan pemasukan tetap agar tercatat otomatis dan disiplin.
           </p>
         </div>
 
         <button
+          type="button"
           onClick={onOpenAddModal}
-          className="self-start md:self-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold text-sm shadow-[0_0_25px_rgba(139,92,246,0.3)] transition-all duration-200 cursor-pointer active:scale-95 shrink-0"
+          className="btn-primary inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 self-start rounded-2xl px-5 py-3 text-sm font-semibold active:scale-95 md:self-auto"
         >
-          <Plus className="w-4 h-4" />
-          <span>Tambah Langganan</span>
+          <Plus className="h-4 w-4" />
+          <span>Tambah langganan</span>
         </button>
       </div>
 
-      {/* Summary Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8 pt-6 border-t border-white/10">
-        <div className="p-4 rounded-2xl bg-violet-500/5 border border-violet-500/20 backdrop-blur-md">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-violet-400 uppercase tracking-wider">
-              Biaya Tetap Bulanan
-            </span>
-            <div className="w-7 h-7 rounded-xl bg-violet-500/20 border border-violet-500/30 flex items-center justify-center text-violet-400">
-              <Repeat className="w-4 h-4" />
+      <div className="relative mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {stats.map((s) => {
+          const Icon = s.Icon;
+          return (
+            <div key={s.label} className="tile relative overflow-hidden rounded-2xl p-5">
+              <div className={`absolute inset-x-0 top-0 h-[2px] ${s.bar}`} />
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] font-medium text-subtle">{s.label}</p>
+                <span className={`flex h-8 w-8 items-center justify-center rounded-xl ${s.tone}`}>
+                  <Icon className="h-4 w-4" />
+                </span>
+              </div>
+              <p className="mt-3 text-xl font-bold tracking-tight text-main">{s.value}</p>
+              <p className="mt-1 text-[11px] text-subtle">{s.hint}</p>
             </div>
-          </div>
-          <p className="text-xl font-bold text-white">{formatRupiah(monthlyTotal)}</p>
-          <p className="text-[11px] text-slate-400 mt-1">Estimasi komitmen rutin/bulan</p>
-        </div>
-
-        <div className="p-4 rounded-2xl bg-cyan-500/5 border border-cyan-500/20 backdrop-blur-md">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-cyan-400 uppercase tracking-wider">
-              Langganan Aktif
-            </span>
-            <div className="w-7 h-7 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
-              <CalendarCheck className="w-4 h-4" />
-            </div>
-          </div>
-          <p className="text-xl font-bold text-white">{activeCount} Layanan</p>
-          <p className="text-[11px] text-slate-400 mt-1">Terjadwal rutin</p>
-        </div>
-
-        <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20 backdrop-blur-md">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider">
-              Mendekati Jatuh Tempo
-            </span>
-            <div className="w-7 h-7 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
-              <AlertCircle className="w-4 h-4" />
-            </div>
-          </div>
-          <p className="text-xl font-bold text-white">{dueSoonCount} Tagihan</p>
-          <p className="text-[11px] text-slate-400 mt-1">Jatuh tempo 7 hari ke depan</p>
-        </div>
+          );
+        })}
       </div>
-    </div>
+    </section>
   );
 }

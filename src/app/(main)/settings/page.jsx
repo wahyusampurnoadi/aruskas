@@ -3,12 +3,12 @@
 import { useState, useEffect } from "react";
 import { User, Palette, ShieldAlert, Crown } from "lucide-react";
 import { toast } from "sonner";
-import { 
-  updateProfile, 
-  verifyBeforeUpdateEmail, 
-  reauthenticateWithCredential, 
+import {
+  updateProfile,
+  verifyBeforeUpdateEmail,
+  reauthenticateWithCredential,
   EmailAuthProvider,
-  onAuthStateChanged 
+  onAuthStateChanged,
 } from "firebase/auth";
 import { collection, query, where, getDocs, doc, setDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
@@ -19,6 +19,13 @@ import AppearanceTab from "@/components/settings/AppearanceTab";
 import PremiumTab from "@/components/settings/PremiumTab";
 import DataTab from "@/components/settings/DataTab";
 import ReAuthModal from "@/components/settings/ReAuthModal";
+
+const TABS = [
+  { id: "profile", label: "Profil & Akun", icon: User },
+  { id: "appearance", label: "Tampilan & Privasi", icon: Palette },
+  { id: "premium", label: "Fitur Premium", icon: Crown, isPro: true },
+  { id: "data", label: "Data & Keamanan", icon: ShieldAlert },
+];
 
 export default function SettingsPage({ user: initialUser }) {
   const [activeTab, setActiveTab] = useState("profile");
@@ -102,12 +109,7 @@ export default function SettingsPage({ user: initialUser }) {
       }
 
       if (docsList.length === 0) {
-        const subColRef = collection(
-          db,
-          "users",
-          currentUser.uid,
-          "transactions"
-        );
+        const subColRef = collection(db, "users", currentUser.uid, "transactions");
         const snap3 = await getDocs(subColRef);
         snap3.forEach((doc) => docsList.push(doc.data()));
       }
@@ -137,29 +139,18 @@ export default function SettingsPage({ user: initialUser }) {
       const monthHeaderRows = [];
 
       docsList.forEach((data) => {
-        const dateObj = parseToDate(
-          data.date || data.transactionDate || data.createdAt
-        );
+        const dateObj = parseToDate(data.date || data.transactionDate || data.createdAt);
 
         if (dateObj.getTime() !== 0) {
           const monthYear = dateObj
-            .toLocaleDateString("id-ID", {
-              month: "long",
-              year: "numeric",
-            })
+            .toLocaleDateString("id-ID", { month: "long", year: "numeric" })
             .toUpperCase();
 
           if (monthYear !== currentMonthYear) {
             currentMonthYear = monthYear;
 
             if (rows.length > 0) {
-              rows.push({
-                Tanggal: "",
-                Kategori: "",
-                Tipe: "",
-                Jumlah: "",
-                Catatan: "",
-              });
+              rows.push({ Tanggal: "", Kategori: "", Tipe: "", Jumlah: "", Catatan: "" });
             }
 
             const headerRowIdx = rows.length + 1;
@@ -264,10 +255,7 @@ export default function SettingsPage({ user: initialUser }) {
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Transaksi");
 
-      XLSX.writeFile(
-        workbook,
-        `ArusKas_Riwayat_Transaksi_${Date.now()}.xlsx`
-      );
+      XLSX.writeFile(workbook, `ArusKas_Riwayat_Transaksi_${Date.now()}.xlsx`);
 
       toast.success("Berhasil mengekspor data transaksi! ✨");
     } catch (error) {
@@ -295,10 +283,7 @@ export default function SettingsPage({ user: initialUser }) {
       if (!currentUser || !currentUser.email) return;
 
       // 1. Verifikasi kata sandi lama
-      const credential = EmailAuthProvider.credential(
-        currentUser.email,
-        password
-      );
+      const credential = EmailAuthProvider.credential(currentUser.email, password);
       await reauthenticateWithCredential(currentUser, credential);
 
       // 2. Kirim email verifikasi ke alamat email baru
@@ -388,83 +373,96 @@ export default function SettingsPage({ user: initialUser }) {
     }
   };
 
-  const tabs = [
-    { id: "profile", label: "Profil & Akun", icon: User },
-    { id: "appearance", label: "Tampilan & Privasi", icon: Palette },
-    { id: "premium", label: "Fitur Premium", icon: Crown },
-    { id: "data", label: "Data & Keamanan", icon: ShieldAlert },
-  ];
+  const activeLabel = TABS.find((t) => t.id === activeTab)?.label;
 
   return (
-    <div className="min-h-screen text-white p-4 md:p-6 lg:p-8 space-y-6">
-      <div>
-        <h1 className="text-3xl font-black tracking-tight">Pengaturan</h1>
-        <p className="text-sm text-slate-400 mt-1">
-          Kelola profil akun, tampilan aplikasi, paket langganan, dan keamanan data ArusKas
+    <div className="mx-auto w-full max-w-6xl space-y-6">
+      {/* HEADER */}
+      <header className="px-1">
+        <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-subtle">Akun & preferensi</p>
+        <h1 className="mt-2 text-3xl font-bold tracking-tight text-main sm:text-4xl">Pengaturan</h1>
+        <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">
+          Kelola profil akun, tampilan aplikasi, paket langganan, dan keamanan data ArusKas.
         </p>
-      </div>
+      </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-1 space-y-2">
-          {tabs.map((tab) => {
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        {/* NAVIGASI TAB */}
+        <nav className="glass flex gap-1.5 overflow-x-auto rounded-2xl p-1.5 lg:col-span-3 lg:flex-col lg:overflow-visible">
+          {TABS.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
 
             return (
               <button
                 key={tab.id}
+                type="button"
                 onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-bold transition-all cursor-pointer ${
+                className={`flex shrink-0 cursor-pointer items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all lg:w-full ${
                   isActive
-                    ? "bg-cyan-600 text-white shadow-lg shadow-cyan-500/20"
-                    : "bg-slate-900/60 border border-white/5 text-slate-400 hover:text-white hover:bg-white/5"
+                    ? "btn-primary"
+                    : "text-muted hover:bg-[var(--glass-hover)] hover:text-main"
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  <Icon className={`w-4 h-4 ${tab.isPro && !isActive ? "text-amber-400" : ""}`} />
-                  <span>{tab.label}</span>
-                </div>
+                <span className="flex items-center gap-3">
+                  <Icon className="h-4 w-4" />
+                  <span className="whitespace-nowrap">{tab.label}</span>
+                </span>
                 {tab.isPro && (
-                  <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
-                    isActive 
-                      ? "bg-white/20 text-white border-white/30" 
-                      : "bg-amber-400/20 text-amber-300 border-amber-400/30"
-                  }`}>
+                  <span
+                    className={`rounded-full border px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wider ${
+                      isActive
+                        ? "border-white/30 bg-white/20 text-white"
+                        : "border-amber-500/30 bg-amber-500/15 text-amber-500"
+                    }`}
+                  >
                     PRO
                   </span>
                 )}
               </button>
             );
           })}
-        </div>
+        </nav>
 
-        <div className="lg:col-span-3 rounded-3xl border border-white/10 bg-slate-900/60 backdrop-blur-2xl p-6 sm:p-8 shadow-xl">
-          {activeTab === "profile" && (
-            <ProfileTab
-              profile={profile}
-              setProfile={setProfile}
-              onSave={handleSaveProfile}
-              isLoading={loading}
-            />
-          )}
+        {/* KONTEN */}
+        <section className="glass-strong relative overflow-hidden rounded-[28px] p-6 sm:p-8 lg:col-span-9">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-cyan-400/15 blur-3xl"
+          />
 
-          {activeTab === "appearance" && (
-            <AppearanceTab
-              hideBalanceByDefault={hideBalanceByDefault}
-              setHideBalanceByDefault={handleToggleHideBalance}
-            />
-          )}
+          <div className="relative">
+            <p className="mb-6 text-[10px] font-semibold uppercase tracking-[0.22em] text-subtle">
+              {activeLabel}
+            </p>
 
-          {activeTab === "premium" && <PremiumTab />}
+            {activeTab === "profile" && (
+              <ProfileTab
+                profile={profile}
+                setProfile={setProfile}
+                onSave={handleSaveProfile}
+                isLoading={loading}
+              />
+            )}
 
-          {activeTab === "data" && (
-            <DataTab
-              onExport={handleExportExcel}
-              onReset={handleResetData}
-              isExporting={isExporting}
-            />
-          )}
-        </div>
+            {activeTab === "appearance" && (
+              <AppearanceTab
+                hideBalanceByDefault={hideBalanceByDefault}
+                setHideBalanceByDefault={handleToggleHideBalance}
+              />
+            )}
+
+            {activeTab === "premium" && <PremiumTab />}
+
+            {activeTab === "data" && (
+              <DataTab
+                onExport={handleExportExcel}
+                onReset={handleResetData}
+                isExporting={isExporting}
+              />
+            )}
+          </div>
+        </section>
       </div>
 
       {/* MODAL RE-AUTH KUSTOM */}

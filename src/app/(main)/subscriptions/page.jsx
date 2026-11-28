@@ -51,11 +51,30 @@ const DEFAULT_SUBSCRIPTIONS = [
   },
 ];
 
+const FILTERS = [
+  { key: "all", label: "Semua" },
+  { key: "active", label: "Aktif" },
+  { key: "paused", label: "Dijeda" },
+  { key: "expense", label: "Pengeluaran" },
+  { key: "income", label: "Pemasukan" },
+];
+
+// Gaya Swal mengikuti tema aktif (memakai variabel CSS)
+const swalBase = {
+  background: "var(--glass-bg-strong)",
+  color: "var(--text-main)",
+  customClass: {
+    popup: "rounded-3xl border border-[var(--line)] shadow-2xl",
+    confirmButton: "rounded-xl font-bold px-5 py-2.5",
+    cancelButton: "rounded-xl font-bold px-5 py-2.5",
+  },
+};
+
 export default function SubscriptionsPage() {
   const { user } = useAuth();
   const [isHydrated, setIsHydrated] = useState(false);
   const [subscriptions, setSubscriptions] = useState([]);
-  const [filterTab, setFilterTab] = useState("all"); // 'all' | 'active' | 'paused' | 'expense' | 'income'
+  const [filterTab, setFilterTab] = useState("all");
 
   // Modal State
   const [showAddModal, setShowAddModal] = useState(false);
@@ -170,16 +189,12 @@ export default function SubscriptionsPage() {
     setShowAddModal(false);
 
     Swal.fire({
+      ...swalBase,
       title: "Berhasil!",
       text: "Langganan baru berhasil ditambahkan.",
       icon: "success",
       timer: 1500,
       showConfirmButton: false,
-      background: "#0b1329",
-      color: "#ffffff",
-      customClass: {
-        popup: "rounded-3xl border border-white/10 backdrop-blur-2xl shadow-2xl",
-      },
     });
   };
 
@@ -225,16 +240,12 @@ export default function SubscriptionsPage() {
     setShowEditModal(false);
 
     Swal.fire({
+      ...swalBase,
       title: "Berhasil!",
       text: "Data langganan berhasil diperbarui.",
       icon: "success",
       timer: 1500,
       showConfirmButton: false,
-      background: "#0b1329",
-      color: "#ffffff",
-      customClass: {
-        popup: "rounded-3xl border border-white/10 backdrop-blur-2xl shadow-2xl",
-      },
     });
   };
 
@@ -256,6 +267,7 @@ export default function SubscriptionsPage() {
 
   const handleDelete = async (id) => {
     Swal.fire({
+      ...swalBase,
       title: "Hapus Langganan?",
       text: "Data langganan berulang ini akan dihapus.",
       icon: "warning",
@@ -263,14 +275,6 @@ export default function SubscriptionsPage() {
       confirmButtonText: "Ya, Hapus",
       cancelButtonText: "Batal",
       confirmButtonColor: "#ef4444",
-      cancelButtonColor: "#1e293b",
-      background: "#0b1329",
-      color: "#ffffff",
-      customClass: {
-        popup: "rounded-3xl border border-white/10 backdrop-blur-2xl shadow-2xl",
-        confirmButton: "rounded-xl font-bold px-5 py-2.5",
-        cancelButton: "rounded-xl font-bold px-5 py-2.5",
-      },
     }).then(async (result) => {
       if (result.isConfirmed) {
         if (user?.uid) {
@@ -291,23 +295,15 @@ export default function SubscriptionsPage() {
     const formattedAmount = `Rp ${Number(item.amount || 0).toLocaleString("id-ID")}`;
 
     Swal.fire({
+      ...swalBase,
       title: `${actionLabel} ${item.name}?`,
-      html: `Transaksi sebesar <strong class="text-violet-400 font-bold">${formattedAmount}</strong> akan dicatat ke dompet <strong class="text-cyan-400">${item.walletName || "BCA Utama"}</strong> dan tanggal jatuh tempo berikutnya akan diatur otomatis.`,
+      html: `Transaksi sebesar <strong class="text-violet-500 font-bold">${formattedAmount}</strong> akan dicatat ke dompet <strong class="text-cyan-500">${item.walletName || "BCA Utama"}</strong> dan tanggal jatuh tempo berikutnya akan diatur otomatis.`,
       icon: "question",
       showCancelButton: true,
       confirmButtonText: "Ya, Catat Sekarang",
       cancelButtonText: "Batal",
       confirmButtonColor: "#7c3aed",
-      cancelButtonColor: "#1e293b",
-      background: "#0b1329",
-      color: "#ffffff",
-      customClass: {
-        popup: "rounded-3xl border border-white/10 backdrop-blur-2xl shadow-2xl",
-        title: "text-white font-bold",
-        htmlContainer: "text-slate-300 text-sm",
-        confirmButton: "rounded-xl font-bold px-5 py-2.5",
-        cancelButton: "rounded-xl font-bold px-5 py-2.5",
-      },
+      cancelButtonColor: "#64748b",
     }).then(async (result) => {
       if (result.isConfirmed) {
         const nextDate = calculateNextDueDate(item.nextDueDate, item.frequency);
@@ -343,16 +339,12 @@ export default function SubscriptionsPage() {
         );
 
         Swal.fire({
+          ...swalBase,
           title: "Transaksi Dicatat!",
           text: `${item.name} sebesar ${formattedAmount} berhasil dicatat. Jatuh tempo berikutnya: ${nextDate}.`,
           icon: "success",
           timer: 2000,
           showConfirmButton: false,
-          background: "#0b1329",
-          color: "#ffffff",
-          customClass: {
-            popup: "rounded-3xl border border-white/10 backdrop-blur-2xl shadow-2xl",
-          },
         });
       }
     });
@@ -387,7 +379,7 @@ export default function SubscriptionsPage() {
   if (!isHydrated) return null;
 
   return (
-    <div className="w-full space-y-8">
+    <div className="mx-auto w-full max-w-6xl space-y-6">
       <SubscriptionHeader
         monthlyTotal={monthlyTotal}
         activeCount={activeCount}
@@ -395,32 +387,33 @@ export default function SubscriptionsPage() {
         onOpenAddModal={() => setShowAddModal(true)}
       />
 
-      {/* Filter Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-        {[
-          { key: "all", label: "Semua Langganan" },
-          { key: "active", label: "Aktif" },
-          { key: "paused", label: "Dijeda" },
-          { key: "expense", label: "Pengeluaran Rutin" },
-          { key: "income", label: "Pemasukan Rutin" },
-        ].map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setFilterTab(tab.key)}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-              filterTab === tab.key
-                ? "bg-violet-500/20 border border-violet-500/40 text-violet-300 shadow-[0_0_15px_rgba(139,92,246,0.2)]"
-                : "bg-slate-900/50 border border-white/10 text-slate-400 hover:text-white hover:bg-white/5"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      {/* Filter segmen */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="tile flex w-full gap-1 overflow-x-auto rounded-2xl p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:w-auto">
+          {FILTERS.map((tab) => {
+            const active = filterTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setFilterTab(tab.key)}
+                className={`shrink-0 cursor-pointer whitespace-nowrap rounded-xl px-4 py-2 text-xs font-semibold transition-all ${
+                  active ? "btn-primary" : "text-muted hover:text-main"
+                }`}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+        <p className="hidden shrink-0 text-xs text-subtle sm:block">
+          {filteredSubscriptions.length} dari {subscriptions.length} langganan
+        </p>
       </div>
 
-      {/* Subscriptions Grid */}
+      {/* Grid langganan */}
       {filteredSubscriptions.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {filteredSubscriptions.map((sub) => (
             <SubscriptionCard
               key={sub.id}
@@ -433,10 +426,9 @@ export default function SubscriptionsPage() {
           ))}
         </div>
       ) : (
-        <div className="p-12 text-center rounded-3xl bg-slate-900/40 border border-white/5 backdrop-blur-xl">
-          <p className="text-sm text-slate-400 font-medium">
-            Belum ada data langganan dalam kategori ini.
-          </p>
+        <div className="glass flex flex-col items-center gap-2 rounded-[28px] px-6 py-14 text-center">
+          <p className="text-sm font-semibold text-main">Belum ada langganan dalam kategori ini</p>
+          <p className="text-xs text-subtle">Coba pilih filter lain atau tambahkan langganan baru.</p>
         </div>
       )}
 

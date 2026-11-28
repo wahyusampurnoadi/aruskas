@@ -1,25 +1,74 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { 
-  Crown, 
-  Calendar, 
-  Clock, 
-  CheckCircle2, 
-  CreditCard, 
-  XCircle, 
+import {
+  Crown,
+  Calendar,
+  Clock,
+  CheckCircle2,
+  CreditCard,
+  XCircle,
   AlertTriangle,
   Zap,
-  Check,
   X,
   ShieldCheck,
   Loader2,
-  Sparkles
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { doc, onSnapshot, updateDoc } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
+
+const PRO_FEATURES_FREE = [
+  "Unlimited Scan Struk & Transfer AI",
+  "Pemrosesan AI Super Cepat",
+  "Ekspor Laporan (PDF & Excel)",
+  "Pengalaman Bebas Iklan",
+  "Dukungan Prioritas 24/7",
+];
+
+const PRO_FEATURES_ACTIVE = [
+  "Unlimited Scan Struk & Transfer AI",
+  "Prioritas Kecepatan Gemini AI",
+  "Ekspor Laporan (PDF & Excel)",
+  "Bebas dari Iklan",
+  "Prioritas Dukungan Pelanggan (24/7)",
+];
+
+/* Kartu metrik kecil untuk paket aktif */
+function MetricTile({ label, value, hint, Icon, accent = false }) {
+  return (
+    <div className="glass relative overflow-hidden rounded-2xl p-5">
+      <div className="flex items-center justify-between">
+        <p className={`text-[10px] font-semibold uppercase tracking-[0.18em] ${accent ? "text-amber-500" : "text-subtle"}`}>
+          {label}
+        </p>
+        <span
+          className={`flex h-8 w-8 items-center justify-center rounded-xl ${
+            accent ? "bg-amber-500/15 text-amber-500" : "chip text-muted"
+          }`}
+        >
+          <Icon size={15} />
+        </span>
+      </div>
+      <p className="mt-4 text-base font-bold text-main">{value}</p>
+      <p className="mt-1 text-[11px] text-subtle">{hint}</p>
+    </div>
+  );
+}
+
+/* Baris fitur dengan centang */
+function FeatureItem({ text }) {
+  return (
+    <div className="tile flex items-center gap-3 rounded-2xl p-3.5">
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-500">
+        <CheckCircle2 size={15} />
+      </span>
+      <span className="text-xs font-medium text-main">{text}</span>
+    </div>
+  );
+}
 
 export default function PremiumTab({ userPlan: propUserPlan, subscriptionInfo, onSuccessUpgrade }) {
   const [userData, setUserData] = useState(null);
@@ -118,10 +167,10 @@ export default function PremiumTab({ userPlan: propUserPlan, subscriptionInfo, o
       if (currentUser) {
         const userRef = doc(db, "users", currentUser.uid);
         const newCancelStatus = !userData?.isCanceled;
-        
+
         await updateDoc(userRef, {
           isCanceled: newCancelStatus,
-          updatedAt: new Date()
+          updatedAt: new Date(),
         });
 
         toast.info(newCancelStatus ? "Langganan berhasil dibatalkan" : "Langganan diaktifkan kembali");
@@ -135,188 +184,271 @@ export default function PremiumTab({ userPlan: propUserPlan, subscriptionInfo, o
 
   if (loadingUser) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 space-y-3">
-        <Loader2 className="w-8 h-8 text-amber-400 animate-spin" />
-        <p className="text-xs text-slate-400 font-medium">Memuat informasi langganan...</p>
+      <div className="flex flex-col items-center justify-center space-y-3 py-20">
+        <Loader2 className="h-7 w-7 animate-spin text-amber-500" />
+        <p className="text-xs font-medium text-subtle">Memuat informasi langganan...</p>
       </div>
     );
   }
 
-  // TAMPILAN AKUN FREE
+  /* ---------- Modal pilihan paket ---------- */
+  const plansModal = showPlansModal && (
+    <div className="fixed inset-y-0 left-0 right-0 z-[10001] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm lg:left-[280px]">
+      <div className="glass-strong relative w-full max-w-md overflow-hidden rounded-[28px] p-6 sm:p-7">
+        <button
+          type="button"
+          onClick={() => setShowPlansModal(false)}
+          aria-label="Tutup"
+          className="btn-icon absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full"
+        >
+          <X className="h-4 w-4" />
+        </button>
+
+        <div className="mb-6 space-y-2 text-center">
+          <div className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-500">
+            <Crown className="h-6 w-6" />
+          </div>
+          <h3 className="text-xl font-bold text-main">
+            ArusKas <span className="text-gradient">PRO</span>
+          </h3>
+          <p className="mx-auto max-w-[280px] text-xs leading-relaxed text-subtle">
+            Pilih paket langganan yang sesuai dengan kebutuhan finansial Anda.
+          </p>
+        </div>
+
+        <div className="mb-6 grid grid-cols-2 gap-3">
+          {[
+            { key: "monthly", label: "Bulanan", price: "Rp 19.000", unit: "/bln" },
+            { key: "yearly", label: "Tahunan", price: "Rp 159.000", unit: "/thn", badge: "Hemat 30%" },
+          ].map((plan) => {
+            const active = selectedPlan === plan.key;
+            return (
+              <button
+                key={plan.key}
+                type="button"
+                onClick={() => setSelectedPlan(plan.key)}
+                className={`relative cursor-pointer rounded-2xl border p-4 text-left transition-all ${
+                  active
+                    ? "border-amber-500/60 bg-amber-500/10 shadow-md shadow-amber-500/10"
+                    : "tile border-transparent hover:border-[var(--line)]"
+                }`}
+              >
+                {plan.badge && (
+                  <span className="absolute -top-2.5 right-3 rounded-full bg-emerald-500 px-2 py-0.5 text-[9px] font-extrabold text-white">
+                    {plan.badge}
+                  </span>
+                )}
+                <span className="mb-1 block text-[11px] font-semibold text-subtle">{plan.label}</span>
+                <div className="text-lg font-black text-main">
+                  {plan.price}
+                  <span className="text-[10px] font-normal text-subtle">{plan.unit}</span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        <button
+          type="button"
+          onClick={handleSubscribe}
+          disabled={loadingPayment}
+          className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-linear-to-r from-amber-500 to-orange-500 py-3 text-xs font-extrabold text-white shadow-xl shadow-amber-500/20 transition-all hover:from-amber-400 hover:to-orange-400 active:scale-[0.98] disabled:opacity-50"
+        >
+          {loadingPayment ? (
+            <span>Menyiapkan Pembayaran...</span>
+          ) : (
+            <>
+              <Zap className="h-4 w-4 fill-white" />
+              <span>Aktivasi ArusKas PRO Sekarang</span>
+            </>
+          )}
+        </button>
+
+        <div className="mt-4 flex items-center justify-center gap-1.5 text-[10px] text-subtle">
+          <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
+          <span>Pembayaran aman via Midtrans</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  /* ---------- Modal pembatalan ---------- */
+  const cancelModal = showCancelModal && (
+    <div className="fixed inset-y-0 left-0 right-0 z-[10001] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm lg:left-[280px]">
+      <div className="glass-strong w-full max-w-md space-y-4 rounded-[28px] p-6">
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-500">
+            <AlertTriangle size={18} />
+          </span>
+          <h3 className="text-base font-bold text-main">Batalkan Langganan?</h3>
+        </div>
+        <p className="text-xs leading-relaxed text-muted">
+          Apakah Anda yakin ingin membatalkan perpanjangan otomatis? Fitur PRO Anda tetap aktif hingga akhir periode pembayaran saat ini.
+        </p>
+        <div className="flex items-center gap-3 pt-2">
+          <button
+            type="button"
+            onClick={() => setShowCancelModal(false)}
+            className="btn-ghost flex-1 cursor-pointer rounded-xl px-4 py-2.5 text-xs font-semibold"
+          >
+            Batal
+          </button>
+          <button
+            type="button"
+            onClick={handleToggleCancelSubscription}
+            className="flex-1 cursor-pointer rounded-xl bg-rose-600 px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-rose-600/20 transition hover:bg-rose-500"
+          >
+            Ya, Batalkan
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  /* ---------- Tampilan akun FREE ---------- */
   if (!isPro) {
     return (
       <div className="space-y-6">
-        {/* HEADER TAB */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-white/10">
+        {/* Header tab */}
+        <div className="flex flex-col items-start justify-between gap-4 border-b border-[var(--line)] pb-5 sm:flex-row sm:items-center">
           <div>
-            <h2 className="text-lg font-bold flex items-center gap-2 text-white">
-              <Crown className="w-5 h-5 text-amber-400" />
+            <h2 className="flex items-center gap-2 text-lg font-bold text-main">
+              <Crown className="h-5 w-5 text-amber-500" />
               <span>Informasi Langganan</span>
             </h2>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="mt-1 text-xs text-subtle">
               Tingkatkan ke paket PRO untuk membuka semua fitur eksklusif ArusKas.
             </p>
           </div>
-
-          <span className="px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2 bg-slate-900/80 text-slate-300 border border-slate-700/60 shadow-sm">
-            <span className="w-2 h-2 rounded-full bg-slate-500" />
+          <span className="chip inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold text-muted">
+            <span className="h-2 w-2 rounded-full bg-subtle" />
             Paket Gratis
           </span>
         </div>
 
-        {/* HERO BANNER */}
-        <div className="relative overflow-hidden rounded-3xl border border-amber-500/30 bg-gradient-to-br from-amber-950/30 via-slate-900/80 to-slate-950 p-6 sm:p-8 backdrop-blur-xl shadow-xl shadow-amber-500/5">
-          <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="relative z-10 max-w-xl space-y-4">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 uppercase tracking-wider">
-              <Zap className="w-3 h-3 fill-amber-300" /> Rekomendasi Fitur
+        {/* Banner rekomendasi */}
+        <div className="glass relative overflow-hidden rounded-[24px] p-6 sm:p-8">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-amber-400/20 blur-3xl"
+          />
+          <div className="relative max-w-xl space-y-4">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-500">
+              <Zap className="h-3 w-3 fill-amber-500" /> Rekomendasi Fitur
             </span>
-            <h3 className="text-2xl font-black text-white tracking-tight leading-tight">
-              Kelola Keuangan Lebih Cerdas dengan <span className="bg-gradient-to-r from-amber-300 to-orange-400 bg-clip-text text-transparent">ArusKas PRO</span>
+            <h3 className="text-2xl font-black leading-tight tracking-tight text-main">
+              Kelola Keuangan Lebih Cerdas dengan{" "}
+              <span className="text-gradient">ArusKas PRO</span>
             </h3>
-            <p className="text-xs text-slate-300 leading-relaxed">
+            <p className="text-xs leading-relaxed text-muted">
               Otomatisasi pencatatan dengan AI Scan Struk tanpa batas, analisis mendalam, serta bebas dari iklan.
             </p>
             <button
               type="button"
               onClick={() => setShowPlansModal(true)}
-              className="mt-2 px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold text-xs shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer flex items-center gap-2"
+              className="flex cursor-pointer items-center gap-2 rounded-xl bg-linear-to-r from-amber-500 to-orange-500 px-6 py-3 text-xs font-extrabold text-white shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.02] hover:from-amber-400 hover:to-orange-400 active:scale-[0.98]"
             >
-              <Crown className="w-4 h-4 fill-slate-950" />
+              <Crown className="h-4 w-4 fill-white" />
               <span>Berlangganan PRO — Rp 19.000/bln</span>
             </button>
           </div>
         </div>
 
-        {/* LIST FITUR */}
-        <div className="space-y-3 pt-2">
-          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-            Manfaat Fitur Premium:
+        {/* Daftar manfaat */}
+        <div className="space-y-3">
+          <h3 className="text-[10px] font-semibold uppercase tracking-[0.2em] text-subtle">
+            Manfaat Fitur Premium
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {[
-              "Unlimited Scan Struk & Transfer AI",
-              "Pemrosesan AI Super Cepat",
-              "Ekspor Laporan (PDF & Excel)",
-              "Pengalaman Bebas Iklan",
-              "Dukungan Prioritas 24/7"
-            ].map((feature, idx) => (
-              <div key={idx} className="flex items-center gap-3 bg-slate-900/50 border border-white/5 p-3.5 rounded-2xl backdrop-blur-md">
-                <div className="p-1 rounded-full bg-amber-400/10 text-amber-400">
-                  <CheckCircle2 size={16} />
-                </div>
-                <span className="text-xs font-medium text-slate-200">{feature}</span>
-              </div>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            {PRO_FEATURES_FREE.map((feature) => (
+              <FeatureItem key={feature} text={feature} />
             ))}
           </div>
         </div>
+
+        {plansModal}
       </div>
     );
   }
 
-  // TAMPILAN AKUN PRO
+  /* ---------- Tampilan akun PRO ---------- */
+  const statusActive = !userData?.isCanceled;
+
   return (
     <div className="space-y-6">
-      {/* HEADER TAB */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-white/10">
+      {/* Header tab */}
+      <div className="flex flex-col items-start justify-between gap-4 border-b border-[var(--line)] pb-5 sm:flex-row sm:items-center">
         <div>
-          <h2 className="text-lg font-bold flex items-center gap-2 text-white">
-            <Crown className="w-5 h-5 text-amber-400 fill-amber-400/20" />
+          <h2 className="flex items-center gap-2 text-lg font-bold text-main">
+            <Crown className="h-5 w-5 fill-amber-500/20 text-amber-500" />
             <span>Informasi Langganan Premium</span>
           </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Kelola status paket aktif dan perpanjangan akun Anda.
-          </p>
+          <p className="mt-1 text-xs text-subtle">Kelola status paket aktif dan perpanjangan akun Anda.</p>
         </div>
 
-        <span className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2 border shadow-sm ${
-          userData?.isCanceled 
-            ? "bg-rose-500/10 text-rose-300 border-rose-500/30"
-            : "bg-emerald-500/10 text-emerald-300 border-emerald-500/30"
-        }`}>
-          <span className={`w-2 h-2 rounded-full ${userData?.isCanceled ? "bg-rose-400" : "bg-emerald-400 animate-pulse"}`} />
-          {userData?.isCanceled ? "Berakhir di Akhir Periode" : "Paket Aktif"}
+        <span
+          className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold ${
+            statusActive
+              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-500"
+              : "border-rose-500/30 bg-rose-500/10 text-rose-500"
+          }`}
+        >
+          <span className={`h-2 w-2 rounded-full ${statusActive ? "animate-pulse bg-emerald-500" : "bg-rose-500"}`} />
+          {statusActive ? "Paket Aktif" : "Berakhir di Akhir Periode"}
         </span>
       </div>
 
-      {/* METRIC CARDS GRID */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-5 rounded-2xl bg-gradient-to-b from-slate-900/90 to-slate-900/50 border border-amber-500/20 backdrop-blur-xl relative overflow-hidden shadow-lg shadow-black/20">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[11px] font-bold text-amber-400 uppercase tracking-wider">Tipe Paket</span>
-            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
-              <CreditCard size={18} />
-            </div>
-          </div>
-          <div className="text-base font-extrabold text-white">
-            {userData?.planType || subscriptionInfo?.planType || "ArusKas PRO"}
-          </div>
-          <p className="text-[11px] text-slate-400 mt-1">Akses penuh ke semua fitur</p>
-        </div>
-
-        <div className="p-5 rounded-2xl bg-gradient-to-b from-slate-900/90 to-slate-900/50 border border-white/10 backdrop-blur-xl relative overflow-hidden shadow-lg shadow-black/20">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Tanggal Mulai</span>
-            <div className="p-2 rounded-xl bg-white/5 text-slate-300 border border-white/10">
-              <Calendar size={18} />
-            </div>
-          </div>
-          <div className="text-base font-extrabold text-white">
-            {userData?.updatedAt?.toDate 
-              ? new Date(userData.updatedAt.toDate()).toLocaleDateString("id-ID", { day: 'numeric', month: 'long', year: 'numeric' })
-              : subscriptionInfo?.startDate || "Aktif"}
-          </div>
-          <p className="text-[11px] text-slate-400 mt-1">Tanggal aktivasi paket</p>
-        </div>
-
-        <div className="p-5 rounded-2xl bg-gradient-to-b from-slate-900/90 to-slate-900/50 border border-white/10 backdrop-blur-xl relative overflow-hidden shadow-lg shadow-black/20">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Status Perpanjangan</span>
-            <div className="p-2 rounded-xl bg-white/5 text-slate-300 border border-white/10">
-              <Clock size={18} />
-            </div>
-          </div>
-          <div className="text-base font-extrabold text-white">
-            {userData?.isCanceled ? "Nonaktif" : "Otomatis"}
-          </div>
-          <p className="text-[11px] text-slate-400 mt-1">
-            {userData?.isCanceled ? "Tidak akan ditagih lagi" : "Diperpanjang secara berkala"}
-          </p>
-        </div>
+      {/* Kartu metrik */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <MetricTile
+          label="Tipe Paket"
+          value={userData?.planType || subscriptionInfo?.planType || "ArusKas PRO"}
+          hint="Akses penuh ke semua fitur"
+          Icon={CreditCard}
+          accent
+        />
+        <MetricTile
+          label="Tanggal Mulai"
+          value={
+            userData?.updatedAt?.toDate
+              ? new Date(userData.updatedAt.toDate()).toLocaleDateString("id-ID", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })
+              : subscriptionInfo?.startDate || "Aktif"
+          }
+          hint="Tanggal aktivasi paket"
+          Icon={Calendar}
+        />
+        <MetricTile
+          label="Status Perpanjangan"
+          value={userData?.isCanceled ? "Nonaktif" : "Otomatis"}
+          hint={userData?.isCanceled ? "Tidak akan ditagih lagi" : "Diperpanjang secara berkala"}
+          Icon={Clock}
+        />
       </div>
 
-      {/* FITUR EKSKLUSIF PRO */}
-      <div className="space-y-3 pt-2">
+      {/* Manfaat aktif */}
+      <div className="space-y-3">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-amber-400" />
-          <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+          <Sparkles className="h-4 w-4 text-amber-500" />
+          <h3 className="text-[10px] font-semibold uppercase tracking-[0.2em] text-subtle">
             Manfaat Fitur Aktif Anda
           </h3>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {[
-            "Unlimited Scan Struk & Transfer AI",
-            "Prioritas Kecepatan Gemini AI",
-            "Ekspor Laporan (PDF & Excel)",
-            "Bebas dari Iklan",
-            "Prioritas Dukungan Pelanggan (24/7)"
-          ].map((feature, idx) => (
-            <div key={idx} className="flex items-center gap-3 bg-slate-900/40 border border-white/5 p-3.5 rounded-2xl backdrop-blur-md">
-              <div className="p-1 rounded-full bg-emerald-400/10 text-emerald-400">
-                <CheckCircle2 size={16} />
-              </div>
-              <span className="text-xs font-medium text-slate-200">{feature}</span>
-            </div>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          {PRO_FEATURES_ACTIVE.map((feature) => (
+            <FeatureItem key={feature} text={feature} />
           ))}
         </div>
       </div>
 
-      {/* FOOTER MANAJEMEN LANGGANAN */}
-      <div className="pt-6 border-t border-white/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      {/* Manajemen pembatalan */}
+      <div className="flex flex-col items-start justify-between gap-4 border-t border-[var(--line)] pt-6 sm:flex-row sm:items-center">
         <div>
-          <h4 className="text-xs font-bold text-slate-200">Manajemen Pembatalan</h4>
-          <p className="text-[11px] text-slate-400 mt-0.5">
+          <h4 className="text-xs font-semibold text-main">Manajemen Pembatalan</h4>
+          <p className="mt-0.5 text-[11px] text-subtle">
             Anda dapat membatalkan atau mengaktifkan kembali perpanjangan kapan saja.
           </p>
         </div>
@@ -325,7 +457,7 @@ export default function PremiumTab({ userPlan: propUserPlan, subscriptionInfo, o
           <button
             type="button"
             onClick={() => setShowCancelModal(true)}
-            className="px-4 py-2.5 bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500/20 text-rose-300 rounded-xl font-bold text-xs transition active:scale-95 flex items-center gap-2 cursor-pointer shrink-0"
+            className="flex shrink-0 cursor-pointer items-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-2.5 text-xs font-bold text-rose-500 transition hover:bg-rose-500/15 active:scale-95"
           >
             <XCircle size={15} />
             Batalkan Langganan
@@ -334,7 +466,7 @@ export default function PremiumTab({ userPlan: propUserPlan, subscriptionInfo, o
           <button
             type="button"
             onClick={handleToggleCancelSubscription}
-            className="px-4 py-2.5 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-400 rounded-xl font-bold text-xs transition active:scale-95 flex items-center gap-2 cursor-pointer shrink-0"
+            className="flex shrink-0 cursor-pointer items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-xs font-bold text-amber-500 transition hover:bg-amber-500/15 active:scale-95"
           >
             <Crown size={15} />
             Aktifkan Kembali Langganan
@@ -342,119 +474,8 @@ export default function PremiumTab({ userPlan: propUserPlan, subscriptionInfo, o
         )}
       </div>
 
-      {/* MODAL PILIHAN PAKET */}
-      {showPlansModal && (
-        <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
-          <div className="relative w-full max-w-md bg-slate-900/90 border border-amber-500/30 rounded-3xl p-6 shadow-2xl shadow-amber-500/10 overflow-hidden">
-            <button
-              type="button"
-              onClick={() => setShowPlansModal(false)}
-              className="absolute top-4 right-4 p-1.5 rounded-full text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 transition-colors cursor-pointer z-10"
-            >
-              <X className="w-4 h-4" />
-            </button>
-
-            <div className="text-center space-y-2 mb-6">
-              <div className="inline-flex p-3 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 mb-1">
-                <Crown className="w-8 h-8 fill-amber-400/20" />
-              </div>
-              <h3 className="text-xl font-extrabold text-white">
-                ArusKas <span className="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">PRO</span>
-              </h3>
-              <p className="text-xs text-slate-400 max-w-[280px] mx-auto">
-                Pilih paket langganan yang sesuai dengan kebutuhan finansial Anda.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 mb-6">
-              <div
-                onClick={() => setSelectedPlan("monthly")}
-                className={`p-3.5 rounded-2xl border transition-all cursor-pointer relative ${
-                  selectedPlan === "monthly"
-                    ? "bg-amber-500/10 border-amber-500/80 shadow-md shadow-amber-500/10"
-                    : "bg-slate-950/50 border-white/10 hover:border-white/20"
-                }`}
-              >
-                <span className="text-[11px] font-semibold text-slate-400 block mb-1">Bulanan</span>
-                <div className="text-lg font-black text-white">
-                  Rp 19.000<span className="text-[10px] font-normal text-slate-400">/bln</span>
-                </div>
-              </div>
-
-              <div
-                onClick={() => setSelectedPlan("yearly")}
-                className={`p-3.5 rounded-2xl border transition-all cursor-pointer relative ${
-                  selectedPlan === "yearly"
-                    ? "bg-amber-500/10 border-amber-500/80 shadow-md shadow-amber-500/10"
-                    : "bg-slate-950/50 border-white/10 hover:border-white/20"
-                }`}
-              >
-                <span className="absolute -top-2.5 right-3 px-2 py-0.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-[9px] font-extrabold text-slate-950 rounded-full">
-                  Hemat 30%
-                </span>
-                <span className="text-[11px] font-semibold text-slate-400 block mb-1">Tahunan</span>
-                <div className="text-lg font-black text-white">
-                  Rp 159.000<span className="text-[10px] font-normal text-slate-400">/thn</span>
-                </div>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleSubscribe}
-              disabled={loadingPayment}
-              className="w-full py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold text-xs shadow-xl shadow-amber-500/20 transition-all cursor-pointer disabled:opacity-50 active:scale-[0.98] flex items-center justify-center gap-2"
-            >
-              {loadingPayment ? (
-                <span>Menyiapkan Pembayaran...</span>
-              ) : (
-                <>
-                  <Zap className="w-4 h-4 fill-slate-950" />
-                  <span>Aktivasi ArusKas PRO Sekarang</span>
-                </>
-              )}
-            </button>
-
-            <div className="flex items-center justify-center gap-1.5 mt-4 text-[10px] text-slate-400">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Pembayaran aman via Midtrans</span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL CANCEL */}
-      {showCancelModal && (
-        <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-          <div className="bg-slate-900 border border-white/10 rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl">
-            <div className="flex items-center gap-3 text-amber-400">
-              <div className="p-3 bg-amber-400/10 rounded-2xl border border-amber-400/20">
-                <AlertTriangle size={20} />
-              </div>
-              <h3 className="text-base font-bold text-white">Batalkan Langganan?</h3>
-            </div>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              Apakah Anda yakin ingin membatalkan perpanjangan otomatis? Fitur PRO Anda tetap aktif hingga akhir periode pembayaran saat ini.
-            </p>
-            <div className="flex items-center gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setShowCancelModal(false)}
-                className="flex-1 py-2.5 px-4 bg-white/5 hover:bg-white/10 text-slate-200 rounded-xl text-xs font-bold transition cursor-pointer"
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={handleToggleCancelSubscription}
-                className="flex-1 py-2.5 px-4 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition shadow-lg shadow-rose-600/20 cursor-pointer"
-              >
-                Ya, Batalkan
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {plansModal}
+      {cancelModal}
     </div>
   );
 }
